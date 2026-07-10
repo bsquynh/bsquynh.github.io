@@ -7,14 +7,21 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 10px; background-color: #f4f6f9; color: #333; }
         .container { max-width: 1100px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #0056b3; font-size: 24px; margin-top: 10px; }
+        h1 { text-align: center; color: #0056b3; font-size: 22px; margin-top: 5px; margin-bottom: 15px; }
         
-        /* Ô tìm kiếm cố định trên đầu khi cuộn (rất tiện trên điện thoại) */
-        .search-box { width: 100%; padding: 14px; font-size: 16px; border: 2px solid #007bff; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; position: sticky; top: 0; z-index: 100; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        /* Ô tìm kiếm cố định trên đầu */
+        .search-box { width: 100%; padding: 14px; font-size: 16px; border: 2px solid #007bff; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 0; z-index: 100; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         
-        /* Khu vực bộ lọc dạng lưới linh hoạt */
-        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; }
-        .filter-item { display: flex; align-items: center; font-size: 14px; cursor: pointer; }
+        /* Nút bấm để Ẩn/Hiện bộ lọc */
+        .filter-toggle-btn { width: 100%; padding: 10px; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; font-weight: bold; color: #495057; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 10px; transition: background 0.2s; }
+        .filter-toggle-btn:hover { background-color: #dee2e6; }
+        
+        /* Vùng chứa các checkbox (Mặc định ẩn đi) */
+        .filters-wrapper { display: none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; }
+        /* Class kích hoạt để hiện bộ lọc khi click */
+        .filters-wrapper.show { display: grid; }
+        
+        .filter-item { display: flex; align-items: center; font-size: 14px; cursor: pointer; user-select: none; }
         .filter-item input { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
         
         /* Giao diện Bảng dành cho MÁY TÍNH */
@@ -39,21 +46,19 @@
         
         .disabled-row { color: #6c757d; background-color: #f1f3f5 !important; }
         .disabled-card { border-left-color: #dc3545; background-color: #f8f9fa; color: #6c757d; }
-        .status-msg { margin-top: 10px; font-weight: bold; color: #0056b3; font-size: 14px; }
+        .status-msg { margin-top: 5px; margin-bottom: 10px; font-weight: bold; color: #0056b3; font-size: 14px; }
 
-        /* ================= CẤU HÌNH RIÊNG CHO ĐIỆN THOẠI (Màn hình dưới 768px) ================= */
+        /* ================= CẤU HÌNH RIÊNG CHO ĐIỆN THOẠI ================= */
         @media (max-width: 768px) {
             body { margin: 5px; }
             .container { padding: 10px; border-radius: 0; box-shadow: none; }
             h1 { font-size: 18px; }
-            .search-box { padding: 10px; font-size: 15px; }
-            .filters { padding: 10px; gap: 8px; }
+            .search-box { padding: 11px; font-size: 15px; }
+            .filter-toggle-btn { padding: 8px; font-size: 13px; }
+            .filters-wrapper { padding: 10px; gap: 8px; }
             .filter-item { font-size: 13px; }
             
-            /* Ẩn hoàn toàn bảng trên điện thoại */
             .table-responsive { display: none; }
-            
-            /* Hiện danh sách dạng Thẻ trên điện thoại */
             .card-list { display: block; }
         }
     </style>
@@ -61,16 +66,20 @@
 <body>
 
 <div class="container">
-    <h1>Hệ thống Tra cứu & Bộ lọc ICD-10</h1>
+    <h1>Hệ thống Tra cứu ICD-10</h1>
     
     <input type="text" id="searchBox" class="search-box" placeholder="Gõ triệu chứng, Tên bệnh hoặc Mã ICD...">
 
-    <div class="filters">
+    <div class="filter-toggle-btn" id="filterToggleBtn">
+        ⚙️ Bộ lọc nâng cao <span id="toggleArrow">▼</span>
+    </div>
+
+    <div class="filters-wrapper" id="filtersWrapper">
         <div class="filter-item"><label><input type="checkbox" id="f_hopLeChinh"> Hợp lệ làm bệnh chính (Sạch)</label></div>
         <div class="filter-item"><label><input type="checkbox" id="f_col24"> KHÔNG dùng làm bệnh chính</label></div>
         <div class="filter-item"><label><input type="checkbox" id="f_col25"> Không khuyến khích bệnh chính</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col26"> Có mã 4-5 ký tự cụ thể hơn</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col27"> Chỉ mã hóa nguyên nhân tử vong</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col26"> Có mã cụ thể hơn (4-5 ký tự)</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col27"> Chỉ mã hóa tử vong</label></div>
         <div class="filter-item"><label><input type="checkbox" id="f_col28"> Chỉ có ở Nữ</label></div>
         <div class="filter-item"><label><input type="checkbox" id="f_col29"> Chỉ có ở Nam</label></div>
     </div>
@@ -82,8 +91,8 @@
             <thead>
                 <tr>
                     <th style="width: 12%">Mã ICD</th>
-                    <th style="width: 33%">Tên Bệnh</th>
-                    <th style="width: 30%">Triệu chứng gợi ý</th>
+                    <th style="width: 35%">Tên Bệnh</th>
+                    <th style="width: 28%">Triệu chứng gợi ý</th>
                     <th style="width: 25%">Trạng thái / Quy tắc</th>
                 </tr>
             </thead>
@@ -97,6 +106,25 @@
 <script src="icd10.js"></script>
 
 <script>
+    // Logic Ẩn/Hiện bộ lọc khi bấm vào nút
+    const filterToggleBtn = document.getElementById('filterToggleBtn');
+    const filtersWrapper = document.getElementById('filtersWrapper');
+    const toggleArrow = document.getElementById('toggleArrow');
+
+    filterToggleBtn.addEventListener('click', () => {
+        // Toggle class 'show' để ẩn hiện bằng CSS
+        filtersWrapper.classList.toggle('show');
+        
+        // Đổi mũi tên chỉ lên hoặc chỉ xuống cho trực quan
+        if (filtersWrapper.classList.contains('show')) {
+            toggleArrow.innerText = "▲";
+            filterToggleBtn.style.backgroundColor = "#dee2e6";
+        } else {
+            toggleArrow.innerText = "▼";
+            filterToggleBtn.style.backgroundColor = "#e9ecef";
+        }
+    });
+
     function removeVietnameseTones(str) {
         str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
         str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
@@ -114,7 +142,7 @@
     const statusMsg = document.getElementById('statusMsg');
 
     searchBox.addEventListener('input', filterData);
-    document.querySelectorAll('.filters input').forEach(checkbox => {
+    document.querySelectorAll('.filters-wrapper input').forEach(checkbox => {
         checkbox.addEventListener('change', filterData);
     });
 
@@ -159,7 +187,7 @@
             return;
         }
 
-        const limitData = data.slice(0, 150); // Giới hạn hiển thị 150 dòng để mượt trên điện thoại yếu
+        const limitData = data.slice(0, 150);
         if (data.length > 150) {
             statusMsg.innerText += ` (Chỉ hiển thị 150 dòng đầu tiên, hãy gõ chi tiết hơn)`;
         }
@@ -176,23 +204,23 @@
             if (item.col29 === 1) { badgesHTML += `<span class="badge bg-male">Chỉ có ở Nam</span>`; }
             if (!badgesHTML) { badgesHTML = `<span class="badge bg-success">Hợp lệ làm bệnh chính</span>`; }
 
-            // 1. Render giao diện Bảng (Cho Máy tính)
+            // 1. Render dạng Bảng (Máy tính)
             const tr = document.createElement('tr');
             if (isRowDisabled) tr.classList.add("disabled-row");
             tr.innerHTML = `<td><strong>${item.ma}</strong></td><td>${item.ten}</td><td>${item.trieuChung || '---'}</td><td>${badgesHTML}</td>`;
             tableBody.appendChild(tr);
 
-            // 2. Render giao diện Thẻ Card (Cho Điện thoại)
+            // 2. Render dạng Thẻ (Điện thoại)
             const card = document.createElement('div');
             card.classList.add("icd-card");
             if (isRowDisabled) card.classList.add("disabled-card");
             card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 18px; color: #007bff; font-weight: bold;">${item.ma}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 17px; color: #007bff; font-weight: bold;">${item.ma}</span>
                 </div>
-                <div style="font-size: 15px; font-weight: 500; margin-bottom: 6px;">${item.ten}</div>
+                <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px; line-height: 1.4;">${item.ten}</div>
                 ${item.trieuChung ? `<div style="font-size: 13px; color: #666; margin-bottom: 8px;">💡 <i>${item.trieuChung}</i></div>` : ''}
-                <div style="margin-top: 5px;">${badgesHTML}</div>
+                <div style="margin-top: 4px;">${badgesHTML}</div>
             `;
             cardList.appendChild(card);
         });
