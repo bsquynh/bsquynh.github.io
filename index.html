@@ -42,7 +42,12 @@
         .bg-info { background-color: #17a2b8; }
         .bg-female { background-color: #e83e8c; }
         .bg-male { background-color: #20c997; }
-        .bg-purple { background-color: #6f42c1; } /* Badge riêng cho mã găm/sao */
+        .bg-purple { background-color: #6f42c1; } 
+        
+        /* Vùng hiển thị Cặp mã đi kèm bóc tách tự động (Hộp màu vàng nổi bật) */
+        .mapping-box { background-color: #fff3cd; border: 1px solid #ffeba8; color: #856404; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
+        .mapping-title { font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        .star-tag { background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px; font-size: 12px; }
         
         .disabled-row { color: #6c757d; background-color: #f1f3f5 !important; }
         .disabled-card { border-left-color: #dc3545; background-color: #f8f9fa; color: #6c757d; }
@@ -140,6 +145,23 @@
         checkbox.addEventListener('change', filterData);
     });
 
+    // --- THUẬT TOÁN QUÉT VÀ TRÍCH XUẤT TẤT CẢ MÃ SAO TRONG TEXT ---
+    function extractAllStarCodes(item) {
+        // Gộp text ở cả tên bệnh và triệu chứng/hướng dẫn bổ sung để quét sạch sẽ
+        const combinedText = `${item.ten || ''} ${item.trieuChung || ''}`;
+        if (!combinedText) return [];
+        
+        // Regex bắt mọi cụm ký tự có dạng mã ICD kèm dấu sao: ví dụ G01*, M01.1*, G05.0*
+        const regex = /[A-Z][0-9][0-9](?:\.[0-9]{1,2})?[\*]|[\*][A-Z][0-9][0-9](?:\.[0-9]{1,2})?/gi;
+        const matches = combinedText.match(regex);
+        
+        if (!matches) return [];
+        
+        // Làm sạch dữ liệu, loại bỏ các mã trùng lặp nếu có
+        const cleanCodes = matches.map(code => code.toUpperCase().trim());
+        return [...new Set(cleanCodes)];
+    }
+
     function filterData() {
         const keyword = removeVietnameseTones(searchBox.value);
         
@@ -155,7 +177,6 @@
             const textTarget = removeVietnameseTones(`${item.ma} ${item.ten} ${item.trieuChung || ''}`);
             if (keyword && !textTarget.includes(keyword)) return false;
 
-            // Nếu người dùng chọn lọc "Hợp lệ làm bệnh chính", ta loại luôn các mã có dấu sao (*)
             if (f_hopLeChinh && (item.col24 === 1 || item.col25 === 1 || item.col26 === 1 || item.ma.includes('*'))) return false;
             if (f_col24 && item.col24 !== 1) return false;
             if (f_col25 && item.col25 !== 1) return false;
@@ -190,17 +211,32 @@
         limitData.forEach(item => {
             let isRowDisabled = false;
             let badgesHTML = "";
+            let mappingHTML = "";
 
-            // --- KIỂM TRA QUY TẮC MÃ KÉP ĐẶC BIỆT THEO QĐ 1849 ---
+            // Trích xuất danh sách mảng các mã sao đi kèm
+            const starCodes = extractAllStarCodes(item);
+
+            // --- KIỂM TRA QUY TẮC MÃ KÉP THEO QĐ 1849 ---
             if (item.ma.includes('*')) {
-                isRowDisabled = true; // KHÓA không cho làm bệnh chính
-                badgesHTML += `<span class="badge bg-danger">Mã bệnh dấu sao (*) - KHÔNG làm bệnh chính</span>`;
+                isRowDisabled = true; 
+                badgesHTML += `<span class="badge bg-danger">Mã dấu sao (*) - Chỉ làm bệnh kèm</span>`;
             } else if (item.ma.includes('†')) {
-                badgesHTML += `<span class="badge bg-purple">Mã găm (†) - Quy ước Bệnh chính</span>`;
+                badgesHTML += `<span class="badge bg-purple">Mã găm (†) - Bệnh chính</span>`;
+                
+                // Nếu tìm thấy một hoặc nhiều mã sao đi kèm trong văn bản dòng này
+                if (starCodes.length > 0) {
+                    let tags = starCodes.map(c => `<span class="star-tag">${c}</span>`).join(" ");
+                    mappingHTML = `
+                        <div class="mapping-box">
+                            <div class="mapping-title">🔗 Bắt buộc chọn kèm thêm 1 trong các mã sao sau:</div>
+                            <div>${tags}</div>
+                        </div>
+                    `;
+                }
             }
 
-            // --- KIỂM TRA CÁC CỘT QUY TẮC CÒN LẠI ---
-            if (item.col24 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Không dùng làm bệnh chính</span>`; }
+            // --- KIỂM TRA CÁC CỘT QUY TẮC KHÁC ---
+            if (item.col24 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Không làm bệnh chính</span>`; }
             if (item.col25 === 1) { badgesHTML += `<span class="badge bg-warning">Không khuyến khích bệnh chính</span>`; }
             if (item.col26 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Cần mã cụ thể hơn</span>`; }
             if (item.col27 === 1) { badgesHTML += `<span class="badge bg-info">Chỉ dùng tử vong</span>`; }
@@ -212,7 +248,15 @@
             // 1. Render dạng Bảng (Máy tính)
             const tr = document.createElement('tr');
             if (isRowDisabled) tr.classList.add("disabled-row");
-            tr.innerHTML = `<td><strong>${item.ma}</strong></td><td>${item.ten}</td><td>${item.trieuChung || '---'}</td><td>${badgesHTML}</td>`;
+            tr.innerHTML = `
+                <td><strong>${item.ma}</strong></td>
+                <td>
+                    <div>${item.ten}</div>
+                    ${mappingHTML}
+                </td>
+                <td>${item.trieuChung || '---'}</td>
+                <td>${badgesHTML}</td>
+            `;
             tableBody.appendChild(tr);
 
             // 2. Render dạng Thẻ (Điện thoại)
@@ -224,8 +268,9 @@
                     <span style="font-size: 17px; color: #007bff; font-weight: bold;">${item.ma}</span>
                 </div>
                 <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px; line-height: 1.4;">${item.ten}</div>
-                ${item.trieuChung ? `<div style="font-size: 13px; color: #666; margin-bottom: 8px;">💡 <i>${item.trieuChung}</i></div>` : ''}
-                <div style="margin-top: 4px;">${badgesHTML}</div>
+                ${item.trieuChung ? `<div style="font-size: 13px; color: #666; margin-bottom: 6px;">💡 <i>${item.trieuChung}</i></div>` : ''}
+                <div>${mappingHTML}</div>
+                <div style="margin-top: 6px;">${badgesHTML}</div>
             `;
             cardList.appendChild(card);
         });
