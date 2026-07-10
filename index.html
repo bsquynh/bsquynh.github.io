@@ -44,7 +44,7 @@
         .bg-male { background-color: #20c997; }
         .bg-purple { background-color: #6f42c1; } 
         
-        /* Vùng hiển thị Cặp mã đi kèm bóc tách tự động (Hộp màu vàng nổi bật) */
+        /* Vùng hiển thị Cặp mã đi kèm bóc tách tự động */
         .mapping-box { background-color: #fff3cd; border: 1px solid #ffeba8; color: #856404; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
         .mapping-title { font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
         .star-tag { background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px; font-size: 12px; }
@@ -95,7 +95,7 @@
                 <tr>
                     <th style="width: 12%">Mã ICD</th>
                     <th style="width: 35%">Tên Bệnh</th>
-                    <th style="width: 28%">Triệu chứng gợi ý</th>
+                    <th style="width: 28%">Triệu chứng gợi ý / Ghi chú</th>
                     <th style="width: 25%">Trạng thái / Quy tắc</th>
                 </tr>
             </thead>
@@ -145,19 +145,21 @@
         checkbox.addEventListener('change', filterData);
     });
 
-    // --- THUẬT TOÁN QUÉT VÀ TRÍCH XUẤT TẤT CẢ MÃ SAO TRONG TEXT ---
+    // --- THUẬT TOÁN TỐI ƯU: BIẾN ĐỐI TƯỢNG THÀNH CHUỖI ĐỂ QUÉT TẤT CẢ CÁC CỘT ---
     function extractAllStarCodes(item) {
-        // Gộp text ở cả tên bệnh và triệu chứng/hướng dẫn bổ sung để quét sạch sẽ
-        const combinedText = `${item.ten || ''} ${item.trieuChung || ''}`;
-        if (!combinedText) return [];
+        // Chuyển toàn bộ dòng dữ liệu (tất cả các cột) thành một chuỗi duy nhất để quét
+        const objectString = JSON.stringify(item);
         
-        // Regex bắt mọi cụm ký tự có dạng mã ICD kèm dấu sao: ví dụ G01*, M01.1*, G05.0*
+        // Loại bỏ trường mã chính (ma) khỏi chuỗi quét để tránh việc thuật toán nhận nhầm nếu mã chính chứa dấu sao
+        const stringToScan = objectString.replace(new RegExp(`"ma"\\s*:\\s*"${item.ma}"`), '');
+
+        // Regex bắt tất cả các định dạng mã sao như G01*, M01.1*, G05.0*...
         const regex = /[A-Z][0-9][0-9](?:\.[0-9]{1,2})?[\*]|[\*][A-Z][0-9][0-9](?:\.[0-9]{1,2})?/gi;
-        const matches = combinedText.match(regex);
+        const matches = stringToScan.match(regex);
         
         if (!matches) return [];
         
-        // Làm sạch dữ liệu, loại bỏ các mã trùng lặp nếu có
+        // Làm sạch định dạng chuỗi và loại bỏ các mã bị trùng lặp
         const cleanCodes = matches.map(code => code.toUpperCase().trim());
         return [...new Set(cleanCodes)];
     }
@@ -213,7 +215,7 @@
             let badgesHTML = "";
             let mappingHTML = "";
 
-            // Trích xuất danh sách mảng các mã sao đi kèm
+            // Trích xuất danh sách mã sao từ toàn bộ các cột trong đối tượng dữ liệu
             const starCodes = extractAllStarCodes(item);
 
             // --- KIỂM TRA QUY TẮC MÃ KÉP THEO QĐ 1849 ---
@@ -223,7 +225,6 @@
             } else if (item.ma.includes('†')) {
                 badgesHTML += `<span class="badge bg-purple">Mã găm (†) - Bệnh chính</span>`;
                 
-                // Nếu tìm thấy một hoặc nhiều mã sao đi kèm trong văn bản dòng này
                 if (starCodes.length > 0) {
                     let tags = starCodes.map(c => `<span class="star-tag">${c}</span>`).join(" ");
                     mappingHTML = `
