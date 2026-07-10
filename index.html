@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cứu & Lọc Danh mục ICD-10</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #0056b3; }
+        .search-box { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 4px; box-sizing: border-box; margin-bottom: 15px; }
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 4px; }
+        .filter-item { display: flex; align-items: center; font-size: 14px; }
+        .filter-item input { margin-right: 8px; width: 16px; height: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; display: inline-block; margin: 2px; }
+        .bg-danger { background-color: #dc3545; }
+        .bg-warning { background-color: #ffc107; color: #212529; }
+        .bg-info { background-color: #17a2b8; }
+        .bg-female { background-color: #e83e8c; }
+        .bg-male { background-color: #20c997; }
+        .disabled-row { color: #6c757d; background-color: #f1f3f5 !important; }
+        .status-msg { margin-top: 10px; font-weight: bold; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hệ thống Tra cứu & Bộ lọc ICD-10</h1>
+    
+    <!-- Thanh tìm kiếm triệu chứng hoặc tên bệnh -->
+    <input type="text" id="searchBox" class="search-box" placeholder="Nhập triệu chứng (VD: sốt, đau bụng...) hoặc Tên/Mã bệnh để tìm kiếm bệnh chính...">
+
+    <!-- Khu vực Bộ lọc quy tắc (Cột 24 - 29) -->
+    <div class="filters">
+        <div class="filter-item"><label><input type="checkbox" id="f_hopLeChinh"> Hợp lệ làm bệnh chính (Sạch)</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col24"> Mã KHÔNG được dùng làm bệnh chính</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col25"> Mã không khuyến khích làm bệnh chính</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col26"> Có mã 4-5 ký tự cụ thể hơn</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col27"> Chỉ mã hóa nguyên nhân tử vong</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col28"> Chỉ có ở Nữ</label></div>
+        <div class="filter-item"><label><input type="checkbox" id="f_col29"> Chỉ có ở Nam</label></div>
+    </div>
+
+    <div class="status-msg" id="statusMsg">Đang tải dữ liệu...</div>
+
+    <!-- Bảng hiển thị kết quả -->
+    <table id="icdTable">
+        <thead>
+            <tr>
+                <th style="width: 10%">Mã ICD</th>
+                <th style="width: 30%">Tên Bệnh</th>
+                <th style="width: 35%">Triệu chứng gợi ý</th>
+                <th style="width: 25%">Trạng thái / Ghi chú</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Dữ liệu kết quả sẽ tự động chèn vào đây bằng JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Nhúng tệp dữ liệu ICD-10 -->
+<script src="icd10.js"></script>
+
+<script>
+    // Hàm loại bỏ dấu tiếng Việt để tìm kiếm chính xác không phụ thuộc dấu
+    function removeVietnameseTones(str) {
+        str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
+        str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
+        str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i");
+        str = str.replace(/ò|á|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
+        str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u");
+        str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y");
+        str = str.replace(/đ/g,"d");
+        return str.toLowerCase().trim();
+    }
+
+    const searchBox = document.getElementById('searchBox');
+    const tableBody = document.getElementById('tableBody');
+    const statusMsg = document.getElementById('statusMsg');
+
+    // Lắng nghe sự kiện gõ phím hoặc tích chọn bộ lọc để cập nhật danh sách
+    searchBox.addEventListener('input', filterData);
+    document.querySelectorAll('.filters input').forEach(checkbox => {
+        checkbox.addEventListener('change', filterData);
+    });
+
+    function filterData() {
+        const keyword = removeVietnameseTones(searchBox.value);
+        
+        // Đọc trạng thái các checkbox lọc
+        const f_hopLeChinh = document.getElementById('f_hopLeChinh').checked;
+        const f_col24 = document.getElementById('f_col24').checked;
+        const f_col25 = document.getElementById('f_col25').checked;
+        const f_col26 = document.getElementById('f_col26').checked;
+        const f_col27 = document.getElementById('f_col27').checked;
+        const f_col28 = document.getElementById('f_col28').checked;
+        const f_col29 = document.getElementById('f_col29').checked;
+
+        // Tiến hành lọc mảng dữ liệu
+        const filtered = icd10Data.filter(item => {
+            // 1. Tìm kiếm theo Từ khóa (Mã, Tên, Triệu chứng)
+            const textTarget = removeVietnameseTones(`${item.ma} ${item.ten} ${item.trieuChung || ''}`);
+            if (keyword && !textTarget.includes(keyword)) return false;
+
+            // 2. Lọc theo checkbox quy tắc chuyên sâu
+            if (f_hopLeChinh && (item.col24 === 1 || item.col25 === 1 || item.col26 === 1)) return false;
+            if (f_col24 && item.col24 !== 1) return false;
+            if (f_col25 && item.col25 !== 1) return false;
+            if (f_col26 && item.col26 !== 1) return false;
+            if (f_col27 && item.col27 !== 1) return false;
+            if (f_col28 && item.col28 !== 1) return false;
+            if (f_col29 && item.col29 !== 1) return false;
+
+            return true;
+        });
+
+        renderTable(filtered);
+    }
+
+    function renderTable(data) {
+        tableBody.innerHTML = '';
+        statusMsg.innerText = `Tìm thấy ${data.length} mã phù hợp.`;
+
+        if(data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Không tìm thấy kết quả phù hợp</td></tr>`;
+            return;
+        }
+
+        // Chỉ hiển thị tối đa 200 dòng đầu tiên để tránh lag trình duyệt nếu dữ liệu quá lớn
+        const limitData = data.slice(0, 200);
+        if (data.length > 200) {
+            statusMsg.innerText += ` (Chỉ hiển thị 200 dòng đầu tiên, hãy gõ từ khóa chi tiết hơn)`;
+        }
+
+        limitData.forEach(item => {
+            let rowClass = "";
+            let notes = "";
+
+            // Xử lý hiển thị trạng thái dựa trên các cột quy định
+            if (item.col24 === 1) {
+                rowClass = "disabled-row";
+                notes += `<span class="badge bg-danger">Không dùng làm bệnh chính</span>`;
+            }
+            if (item.col25 === 1) {
+                notes += `<span class="badge bg-warning">Không khuyến khích bệnh chính</span>`;
+            }
+            if (item.col26 === 1) {
+                rowClass = "disabled-row";
+                notes += `<span class="badge bg-danger">Cần mã 4-5 ký tự rõ hơn</span>`;
+            }
+            if (item.col27 === 1) {
+                notes += `<span class="badge bg-info">Chỉ dùng tử vong</span>`;
+            }
+            if (item.col28 === 1) {
+                notes += `<span class="badge bg-female">Chỉ có ở Nữ</span>`;
+            }
+            if (item.col29 === 1) {
+                notes += `<span class="badge bg-male">Chỉ có ở Nam</span>`;
+            }
+            if (!notes) {
+                notes = `<span class="badge" style="background:#28a745">Hợp lệ làm bệnh chính</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            if (rowClass) tr.classList.add(rowClass);
+
+            tr.innerHTML = `
+                <td><strong>${item.ma}</strong></td>
+                <td>${item.ten}</td>
+                <td>${item.trieuChung || '---'}</td>
+                <td>${notes}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    // Chạy lần đầu tiên để nạp toàn bộ danh mục lên bảng
+    window.onload = () => {
+        filterData();
+    };
+</script>
+</body>
+</html>
