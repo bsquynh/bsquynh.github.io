@@ -16,9 +16,8 @@
         .filter-toggle-btn { width: 100%; padding: 10px; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; font-weight: bold; color: #495057; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 10px; transition: background 0.2s; }
         .filter-toggle-btn:hover { background-color: #dee2e6; }
         
-        /* Vùng chứa các checkbox (Mặc định ẩn đi) */
+        /* Vùng chứa các checkbox */
         .filters-wrapper { display: none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; }
-        /* Class kích hoạt để hiện bộ lọc khi click */
         .filters-wrapper.show { display: grid; }
         
         .filter-item { display: flex; align-items: center; font-size: 14px; cursor: pointer; user-select: none; }
@@ -31,7 +30,7 @@
         th { background-color: #007bff; color: white; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         
-        /* Giao diện Thẻ ẩn mặc định trên Máy tính */
+        /* Giao diện Thẻ dành cho ĐIỆN THOẠI */
         .card-list { display: none; }
         .icd-card { background: #fff; border: 1px solid #dee2e6; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         
@@ -43,12 +42,12 @@
         .bg-info { background-color: #17a2b8; }
         .bg-female { background-color: #e83e8c; }
         .bg-male { background-color: #20c997; }
+        .bg-purple { background-color: #6f42c1; } /* Badge riêng cho mã găm/sao */
         
         .disabled-row { color: #6c757d; background-color: #f1f3f5 !important; }
         .disabled-card { border-left-color: #dc3545; background-color: #f8f9fa; color: #6c757d; }
         .status-msg { margin-top: 5px; margin-bottom: 10px; font-weight: bold; color: #0056b3; font-size: 14px; }
 
-        /* ================= CẤU HÌNH RIÊNG CHO ĐIỆN THOẠI ================= */
         @media (max-width: 768px) {
             body { margin: 5px; }
             .container { padding: 10px; border-radius: 0; box-shadow: none; }
@@ -57,7 +56,6 @@
             .filter-toggle-btn { padding: 8px; font-size: 13px; }
             .filters-wrapper { padding: 10px; gap: 8px; }
             .filter-item { font-size: 13px; }
-            
             .table-responsive { display: none; }
             .card-list { display: block; }
         }
@@ -106,16 +104,12 @@
 <script src="icd10.js"></script>
 
 <script>
-    // Logic Ẩn/Hiện bộ lọc khi bấm vào nút
     const filterToggleBtn = document.getElementById('filterToggleBtn');
     const filtersWrapper = document.getElementById('filtersWrapper');
     const toggleArrow = document.getElementById('toggleArrow');
 
     filterToggleBtn.addEventListener('click', () => {
-        // Toggle class 'show' để ẩn hiện bằng CSS
         filtersWrapper.classList.toggle('show');
-        
-        // Đổi mũi tên chỉ lên hoặc chỉ xuống cho trực quan
         if (filtersWrapper.classList.contains('show')) {
             toggleArrow.innerText = "▲";
             filterToggleBtn.style.backgroundColor = "#dee2e6";
@@ -161,7 +155,8 @@
             const textTarget = removeVietnameseTones(`${item.ma} ${item.ten} ${item.trieuChung || ''}`);
             if (keyword && !textTarget.includes(keyword)) return false;
 
-            if (f_hopLeChinh && (item.col24 === 1 || item.col25 === 1 || item.col26 === 1)) return false;
+            // Nếu người dùng chọn lọc "Hợp lệ làm bệnh chính", ta loại luôn các mã có dấu sao (*)
+            if (f_hopLeChinh && (item.col24 === 1 || item.col25 === 1 || item.col26 === 1 || item.ma.includes('*'))) return false;
             if (f_col24 && item.col24 !== 1) return false;
             if (f_col25 && item.col25 !== 1) return false;
             if (f_col26 && item.col26 !== 1) return false;
@@ -196,12 +191,22 @@
             let isRowDisabled = false;
             let badgesHTML = "";
 
+            // --- KIỂM TRA QUY TẮC MÃ KÉP ĐẶC BIỆT THEO QĐ 1849 ---
+            if (item.ma.includes('*')) {
+                isRowDisabled = true; // KHÓA không cho làm bệnh chính
+                badgesHTML += `<span class="badge bg-danger">Mã bệnh dấu sao (*) - KHÔNG làm bệnh chính</span>`;
+            } else if (item.ma.includes('†')) {
+                badgesHTML += `<span class="badge bg-purple">Mã găm (†) - Quy ước Bệnh chính</span>`;
+            }
+
+            // --- KIỂM TRA CÁC CỘT QUY TẮC CÒN LẠI ---
             if (item.col24 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Không dùng làm bệnh chính</span>`; }
             if (item.col25 === 1) { badgesHTML += `<span class="badge bg-warning">Không khuyến khích bệnh chính</span>`; }
             if (item.col26 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Cần mã cụ thể hơn</span>`; }
             if (item.col27 === 1) { badgesHTML += `<span class="badge bg-info">Chỉ dùng tử vong</span>`; }
             if (item.col28 === 1) { badgesHTML += `<span class="badge bg-female">Chỉ có ở Nữ</span>`; }
             if (item.col29 === 1) { badgesHTML += `<span class="badge bg-male">Chỉ có ở Nam</span>`; }
+            
             if (!badgesHTML) { badgesHTML = `<span class="badge bg-success">Hợp lệ làm bệnh chính</span>`; }
 
             // 1. Render dạng Bảng (Máy tính)
