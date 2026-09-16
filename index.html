@@ -345,13 +345,13 @@
         <div class="status-msg" id="statusCdMsg" style="color: #28a745;">Đang nạp dữ liệu chỉ định...</div>
 
         <!-- BẢNG HIỂN THỊ ĐÚNG 3 CỘT: KỸ THUẬT - MÃ ICD - TÊN BỆNH -->
-        <div class="table-responsive">
+       <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th class="cd-header" style="width: 40%">Kỹ thuật</th>
-                        <th class="cd-header" style="width: 15%">Mã ICD</th>
-                        <th class="cd-header" style="width: 45%">Tên bệnh</th>
+                        <th class="cd-header" style="width: 35%;">Tên Kỹ thuật</th>
+                        <th class="cd-header" style="width: 15%;">ICD Phù hợp</th>
+                        <th class="cd-header" style="width: 50%;">Tên bệnh</th>
                     </tr>
                 </thead>
                 <tbody id="tableCdBody"></tbody>
@@ -604,44 +604,50 @@
 
     // Hiển thị dữ liệu 3 Cột: Kỹ thuật | Mã ICD | Tên bệnh
     function renderChiDinhUI(data) {
+        // 1. Xóa sạch dữ liệu cũ trước khi vẽ danh sách mới
         tableCdBody.innerHTML = '';
         cardCdList.innerHTML = '';
         statusCdMsg.innerText = `Tìm thấy ${data.length} kỹ thuật chỉ định phù hợp.`;
 
+        // 2. Xử lý trường hợp không tìm thấy từ khóa
         if (data.length === 0) {
             tableCdBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</td></tr>`;
             cardCdList.innerHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</div>`;
             return;
         }
 
+        // 3. Duyệt qua từng kỹ thuật và vẽ dữ liệu thành 3 cột
         data.forEach(item => {
-            let icdColumnHTML = "";
-            let nameColumnHTML = "";
+            let icdBadgesHTML = "";
+            let benhKemIcdHTML = "";
 
             if (item.danhSachICD && item.danhSachICD.length > 0) {
                 item.danhSachICD.forEach(icd => {
-                    icdColumnHTML += `<div style="margin-bottom: 6px;"><span class="icd-code-badge">${icd.maICD}</span></div>`;
-                    nameColumnHTML += `<div style="margin-bottom: 6px; padding: 2px 0; line-height: 1.4;">${icd.tenBenh}</div>`;
+                    // Cột 2: Chỉ hiển thị nhãn Mã ICD màu xanh
+                    icdBadgesHTML += `<div style="margin-bottom: 6px;"><span class="icd-code-badge">${icd.maICD}</span></div>`;
+                    
+                    // Cột 3: Tên bệnh kèm theo mã ICD phía sau trong ngoặc
+                    benhKemIcdHTML += `<div style="margin-bottom: 6px; padding: 2px 0; line-height: 1.4;">${icd.tenBenh} <strong>(${icd.maICD})</strong></div>`;
                 });
             } else {
-                icdColumnHTML = "---";
-                nameColumnHTML = "---";
+                icdBadgesHTML = "---";
+                benhKemIcdHTML = "---";
             }
 
-            // 1. Dòng bảng 3 cột cho MÁY TÍNH
+            // Giao diện Bảng dành cho MÁY TÍNH (Đúng 3 thẻ <td>)
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong style="color: #0056b3; font-size: 15px;">${item.tenDV}</strong></td>
-                <td>${icdColumnHTML}</td>
-                <td>${nameColumnHTML}</td>
+                <td>${icdBadgesHTML}</td>
+                <td>${benhKemIcdHTML}</td>
             `;
             tableCdBody.appendChild(tr);
 
-            // 2. Giao diện dạng Thẻ cho ĐIỆN THOẠI
+            // Giao diện Thẻ dành cho ĐIỆN THOẠI
             const card = document.createElement('div');
             card.classList.add("custom-card", "cd-card");
             
-            let phoneListHTML = (item.danhSachICD || []).map(icd => `
+            let mobileListHTML = (item.danhSachICD || []).map(icd => `
                 <div class="icd-item-row">
                     <span class="icd-code-badge">${icd.maICD}</span>
                     <span>${icd.tenBenh}</span>
@@ -653,8 +659,8 @@
                     ${item.tenDV}
                 </div>
                 <div style="background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px; border-radius: 6px;">
-                    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">MÃ ICD & TÊN BỆNH PHÙ HỢP:</div>
-                    ${phoneListHTML}
+                    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">ICD VÀ TÊN BỆNH PHÙ HỢP:</div>
+                    ${mobileListHTML}
                 </div>
             `;
             cardCdList.appendChild(card);
