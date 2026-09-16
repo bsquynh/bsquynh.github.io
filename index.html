@@ -29,12 +29,42 @@
             margin-bottom: 15px; 
         }
 
-        /* Bảng lồng con để khóa chặt từng cặp hàng Mã ICD và Tên bệnh */
+        /* =========================================================================
+           2. ĐỊNH DẠNG BẢNG & CHỐNG XÔ VIỀN (TABLE FIXED LAYOUT)
+           ========================================================================= */
+        /* Bảng ngoài: Cố định tỷ lệ các cột */
+        .table-responsive table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+            background: white; 
+            table-layout: fixed; 
+        }
+        th, td { 
+            border: 1px solid #dee2e6; 
+            padding: 12px; 
+            text-align: left; 
+            vertical-align: top; 
+            box-sizing: border-box;
+        }
+        th { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        th.cd-header { 
+            background-color: #28a745; 
+        }
+        tr:nth-child(even) { 
+            background-color: #f8f9fa; 
+        }
+
+        /* Bảng con lồng bên trong: Khóa chặt từng cặp hàng Mã ICD và Tên bệnh */
         .nested-subtable {
             width: 100%;
             border-collapse: collapse;
             margin: 0;
             background: transparent;
+            table-layout: fixed; 
         }
         .nested-subtable tr {
             border-bottom: 1px solid #dee2e6;
@@ -45,16 +75,19 @@
         }
         .nested-subtable td {
             border: none !important;
-            padding: 8px 6px !important;
+            padding: 8px 10px !important;
             vertical-align: middle;
+            box-sizing: border-box;
         }
+        /* Cột Mã ICD trong bảng con: Chiếm tỷ lệ tương ứng hoàn hảo với tiêu đề */
         .nested-subtable td.td-icd {
-            width: 90px;
-            min-width: 90px;
+            width: 13.33%; 
             text-align: center;
-            border-right: 1px solid #dee2e6 !important;
+            border-right: 1px solid #dee2e6 !important; /* Vách ngăn dọc thẳng hàng */
         }
+        /* Cột Tên bệnh trong bảng con */
         .nested-subtable td.td-name {
+            width: 86.67%;
             text-align: left;
             line-height: 1.4;
             font-size: 14px;
@@ -65,7 +98,7 @@
         }
 
         /* =========================================================================
-           2. THANH ĐIỀU HƯỚNG TAB
+           3. THANH ĐIỀU HƯỚNG TAB
            ========================================================================= */
         .tab-nav {
             display: flex;
@@ -102,7 +135,7 @@
         }
 
         /* =========================================================================
-           3. Ô TÌM KIẾM & BỘ LỌC DÙNG CHUNG
+           4. Ô TÌM KIẾM & BỘ LỌC DÙNG CHUNG
            ========================================================================= */
         .search-box { 
             width: 100%; 
@@ -173,37 +206,6 @@
         }
         
         /* =========================================================================
-           4. BẢNG HIỂN THỊ TRÊN MÁY TÍNH (DESKTOP)
-           ========================================================================= */
-        .table-responsive { 
-            width: 100%; 
-            overflow-x: auto; 
-            display: block; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-            background: white; 
-        }
-        th, td { 
-            border: 1px solid #dee2e6; 
-            padding: 12px; 
-            text-align: left; 
-            vertical-align: top; 
-        }
-        th { 
-            background-color: #007bff; 
-            color: white; 
-        }
-        th.cd-header { 
-            background-color: #28a745; 
-        }
-        tr:nth-child(even) { 
-            background-color: #f8f9fa; 
-        }
-        
-        /* =========================================================================
            5. GIAO DIỆN THẺ TRÊN ĐIỆN THOẠI (MOBILE CARD)
            ========================================================================= */
         .card-list { 
@@ -222,7 +224,7 @@
             border-left-color: #28a745; 
         }
         
-        /* BADGES */
+        /* CÁC NHÃN TRẠNG THÁI & BADGES */
         .badge { 
             padding: 4px 8px; 
             border-radius: 4px; 
@@ -270,7 +272,7 @@
         .icd-code-badge { 
             background-color: #007bff; 
             color: white; 
-            padding: 2px 6px; 
+            padding: 3px 6px; 
             border-radius: 4px; 
             font-weight: bold; 
             display: inline-block; 
@@ -313,7 +315,7 @@
 <body>
 
 <div class="container">
-    <!-- THANH NÚT CHUYỂN TAB -->
+    <!-- THANH NÚT CHUYỂN QUA LẠI GIỮA 2 TAB -->
     <div class="tab-nav">
         <button id="btnTabIcd" class="tab-btn" onclick="switchTab('view-icd10', this)">🔍 Tra cứu ICD-10</button>
         <button id="btnTabCd" class="tab-btn active" onclick="switchTab('view-chidinh', this)">📋 Tra cứu Chỉ định Phù hợp</button>
@@ -362,10 +364,11 @@
     <div id="view-chidinh" class="tab-content active">
         <h1 style="color: #28a745;">Tra cứu Chỉ định Phù hợp Danh mục</h1>
         
-        <input type="text" id="searchCdBox" class="search-box cd-border" placeholder="Gõ từ khóa: MRI, CT, tên kỹ thuật, mã ICD hoặc tên bệnh...">
+        <input type="text" id="searchCdBox" class="search-box cd-border" placeholder="Gõ từ khóa tìm trong tên kỹ thuật: MRI, CT, cổ, lồng ngực, sọ não...">
 
         <div class="status-msg" id="statusCdMsg" style="color: #28a745;">Đang nạp dữ liệu chỉ định...</div>
 
+        <!-- BẢNG ĐÚNG 3 CỘT VỚI TỶ LỆ CỐ ĐỊNH CHỐNG XÔ VIỀN -->
         <div class="table-responsive">
             <table>
                 <thead>
@@ -379,17 +382,18 @@
             </table>
         </div>
 
+        <!-- Giao diện hiển thị trên điện thoại -->
         <div class="card-list" id="cardCdList"></div>
     </div>
 </div>
 
-<!-- NẠP 2 FILE DỮ LIỆU JS ĐỘC LẬP TỪ BÊN NGOÀI -->
+<!-- NẠP 2 FILE DỮ LIỆU NGOÀI -->
 <script src="icd10.js"></script>
 <script src="chidinh.js"></script>
 
 <script>
     // =========================================================================
-    // 1. CHUYỂN ĐỔI TAB
+    // 1. CHUYỂN ĐỔI TAB (TABS LOGIC)
     // =========================================================================
     function switchTab(tabId, clickedBtn) {
         document.querySelectorAll('.tab-content').forEach(view => view.classList.remove('active'));
@@ -400,7 +404,7 @@
     }
 
     // =========================================================================
-    // 2. HÀM CHUẨN HÓA VĂN BẢN VÀ BẢNG TỪ ĐỒNG NGHĨA (ĐẶT LÊN TRƯỚC ĐỂ TRÁNH LỖI)
+    // 2. CHUẨN HÓA VĂN BẢN VÀ XỬ LÝ TỪ ĐỒNG NGHĨA CHỐNG HIỂU NHẦM TỪ
     // =========================================================================
     function removeVietnameseTones(str) {
         if (!str) return "";
@@ -426,10 +430,12 @@
         "xq": "x quang"
     };
 
-    function chuanHoaTuKhoa(keyword) {
-        let clean = removeVietnameseTones(keyword);
+    // Hàm mở rộng từ đồng nghĩa sử dụng Word Boundary (\b) để chống hiểu nhầm
+    function chuanHoaTuKhoa(text) {
+        let clean = removeVietnameseTones(text);
         for (const [vietTat, dayDu] of Object.entries(tuDongNghia)) {
-            if (clean.includes(vietTat)) {
+            const regex = new RegExp(`\\b${vietTat}\\b`, 'gi');
+            if (regex.test(clean)) {
                 clean += " " + dayDu;
             }
         }
@@ -583,7 +589,7 @@
     }
 
     // =========================================================================
-    // 4. XỬ LÝ CHỨC NĂNG TRA CỨU CHỈ ĐỊNH
+    // 4. XỬ LÝ CHỨC NĂNG TRA CỨU CHỈ ĐỊNH (CHỈ TÌM DUY NHẤT TRONG TÊN KỸ THUẬT)
     // =========================================================================
     const searchCdBox = document.getElementById('searchCdBox');
     const tableCdBody = document.getElementById('tableCdBody');
@@ -601,56 +607,28 @@
             return;
         }
 
-        const inputNormalized = removeVietnameseTones(rawInput);
-        const keywords = inputNormalized.split(/\s+/).filter(Boolean);
+        // Tách các từ khóa người dùng nhập thành mảng các từ đơn
+        const keywords = removeVietnameseTones(rawInput).split(/\s+/).filter(Boolean);
 
-        const isSearchingNeck = keywords.includes("co") && 
-                                !keywords.includes("chan") && 
-                                !keywords.includes("tay") && 
-                                !keywords.includes("dui");
+        const filtered = chiDinhData.filter(item => {
+            // Chuỗi nguồn DUY NHẤT để tìm kiếm: Tên dịch vụ kỹ thuật
+            const techNameNormalized = chuanHoaTuKhoa(item.tenDV);
 
-        let results = [];
-
-        chiDinhData.forEach(item => {
-            const tenDVNormalized = removeVietnameseTones(item.tenDV);
-            const sourceTechText = chuanHoaTuKhoa(`${item.maDV} ${item.tenDV} ${item.nhom}`);
-
-            const matchInTechTitle = keywords.every(kw => {
+            // BẮT BUỘC: Mọi từ khóa nhập vào phải xuất hiện chuẩn xác trong TÊN KỸ THUẬT
+            return keywords.every(kw => {
                 const kwNoTone = removeVietnameseTones(kw);
                 const synonym = tuDongNghia[kwNoTone] || "";
-                return sourceTechText.includes(kwNoTone) || (synonym && sourceTechText.includes(synonym));
+
+                // So khớp nguyên từ (\b) để chống nhầm lẫn từ
+                const regexKw = new RegExp(`\\b${kwNoTone}\\b`, 'i');
+                const matchDirect = regexKw.test(techNameNormalized);
+                const matchSynonym = synonym ? new RegExp(`\\b${synonym}\\b`, 'i').test(techNameNormalized) : false;
+
+                return matchDirect || matchSynonym;
             });
-
-            const matchedDiseases = (item.danhSachICD || []).filter(icd => {
-                const icdText = removeVietnameseTones(`${icd.maICD} ${icd.tenBenh}`);
-                return keywords.some(kw => icdText.includes(kw));
-            });
-
-            if (isSearchingNeck) {
-                const isLimbTech = tenDVNormalized.includes("chi") || tenDVNormalized.includes("khop");
-                const isSpineOrNeckTech = tenDVNormalized.includes("co") || tenDVNormalized.includes("cot song");
-                
-                if (isLimbTech && !isSpineOrNeckTech) {
-                    return;
-                }
-            }
-
-            if (matchInTechTitle) {
-                results.push({
-                    ...item,
-                    priority: 2
-                });
-            } else if (matchedDiseases.length > 0) {
-                results.push({
-                    ...item,
-                    danhSachICD: matchedDiseases,
-                    priority: 1
-                });
-            }
         });
 
-        results.sort((a, b) => b.priority - a.priority);
-        renderChiDinhUI(results);
+        renderChiDinhUI(filtered);
     }
 
     function renderChiDinhUI(data) {
@@ -675,7 +653,7 @@
                                 <span class="icd-code-badge">${icd.maICD}</span>
                             </td>
                             <td class="td-name">
-                                <span>${icd.tenBenh}</span> <strong style="color: #0056b3;">(${icd.maICD})</strong>
+                                <span>${icd.tenBenh}</span>
                             </td>
                         </tr>
                     `;
@@ -684,6 +662,7 @@
                 subRowsHTML = `<tr><td class="td-icd">---</td><td class="td-name">---</td></tr>`;
             }
 
+            // Dòng bảng Desktop: Cột 1 chiếm 25%, Cột 2 chiếm 75% bọc subtable
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="padding: 12px; vertical-align: top; width: 25%;">
@@ -699,6 +678,7 @@
             `;
             tableCdBody.appendChild(tr);
 
+            // Giao diện Thẻ dành cho Điện thoại
             const card = document.createElement('div');
             card.classList.add("custom-card", "cd-card");
             
@@ -725,11 +705,11 @@
     }
 
     // =========================================================================
-    // 5. TỰ ĐỘNG KHỞI CHẠY TẢI DỮ LIỆU
+    // 5. TỰ ĐỘNG KHỞI CHẠY TẢI DỮ LIỆU KHI MỞ TRANG WEB
     // =========================================================================
     window.onload = () => {
-        filterData();
-        filterChiDinhData();
+        filterData();        // Khởi động bảng ICD-10
+        filterChiDinhData(); // Khởi động bảng Chỉ định
     };
 </script>
 </body>
