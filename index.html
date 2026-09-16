@@ -3,38 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tra cứu & Lọc Danh mục ICD-10</title>
+    <title>Hệ thống Tra cứu Y tế: ICD-10 & Chỉ định</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 10px; background-color: #f4f6f9; color: #333; }
         .container { max-width: 1100px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #0056b3; font-size: 22px; margin-top: 5px; margin-bottom: 15px; }
-        
-        /* Ô tìm kiếm cố định trên đầu */
+
+        /* --- PHẦN 1: NÚT CHUYỂN TAB --- */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 8px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border: 2px solid #007bff;
+            background: #fff;
+            color: #007bff;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-btn:hover {
+            background: #e7f1ff;
+        }
+        .tab-btn.active {
+            background: #007bff;
+            color: #fff;
+        }
+        .tab-content {
+            display: none; /* Mặc định ẩn phân vùng */
+        }
+        .tab-content.active {
+            display: block; /* Chỉ hiện phân vùng đang được kích hoạt */
+        }
+
+        /* --- PHẦN 2: Ô TÌM KIẾM & BỘ LỌC DÙNG CHUNG --- */
         .search-box { width: 100%; padding: 14px; font-size: 16px; border: 2px solid #007bff; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 0; z-index: 100; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .search-box.cd-border { border-color: #28a745; }
         
-        /* Nút bấm để Ẩn/Hiện bộ lọc */
         .filter-toggle-btn { width: 100%; padding: 10px; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; font-weight: bold; color: #495057; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 10px; transition: background 0.2s; }
         .filter-toggle-btn:hover { background-color: #dee2e6; }
         
-        /* Vùng chứa các checkbox */
         .filters-wrapper { display: none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; }
         .filters-wrapper.show { display: grid; }
         
         .filter-item { display: flex; align-items: center; font-size: 14px; cursor: pointer; user-select: none; }
         .filter-item input { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
         
-        /* Giao diện Bảng dành cho MÁY TÍNH */
+        /* --- PHẦN 3: BẢNG TRÊN MÁY TÍNH --- */
         .table-responsive { width: 100%; overflow-x: auto; display: block; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background-color: #007bff; color: white; }
+        th.cd-header { background-color: #28a745; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         
-        /* Giao diện Thẻ dành cho ĐIỆN THOẠI */
+        /* --- PHẦN 4: GIAO DIỆN DẠNG THẺ (CARD) ĐIỆN THOẠI --- */
         .card-list { display: none; }
-        .icd-card { background: #fff; border: 1px solid #dee2e6; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .custom-card { background: #fff; border: 1px solid #dee2e6; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .cd-card { border-left-color: #28a745; }
         
-        /* Định dạng các nhãn Cảnh báo (Badges) */
+        /* BADGES & NHÃN */
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; display: inline-block; margin: 2px; }
         .bg-success { background-color: #28a745; }
         .bg-danger { background-color: #dc3545; }
@@ -44,10 +80,10 @@
         .bg-male { background-color: #20c997; }
         .bg-purple { background-color: #6f42c1; } 
         
-        /* Vùng hiển thị Cặp mã đi kèm bóc tách tự động */
         .mapping-box { background-color: #fff3cd; border: 1px solid #ffeba8; color: #856404; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
         .mapping-title { font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
         .star-tag { background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px; font-size: 12px; }
+        .icd-target-tag { background-color: #007bff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px; font-size: 12px; }
         
         .disabled-row { color: #6c757d; background-color: #f1f3f5 !important; }
         .disabled-card { border-left-color: #dc3545; background-color: #f8f9fa; color: #6c757d; }
@@ -57,6 +93,7 @@
             body { margin: 5px; }
             .container { padding: 10px; border-radius: 0; box-shadow: none; }
             h1 { font-size: 18px; }
+            .tab-btn { font-size: 13px; padding: 10px 5px; }
             .search-box { padding: 11px; font-size: 15px; }
             .filter-toggle-btn { padding: 8px; font-size: 13px; }
             .filters-wrapper { padding: 10px; gap: 8px; }
@@ -69,46 +106,126 @@
 <body>
 
 <div class="container">
-    <h1>Hệ thống Tra cứu ICD-10</h1>
-    
-    <input type="text" id="searchBox" class="search-box" placeholder="Gõ triệu chứng, Tên bệnh hoặc Mã ICD...">
-
-    <div class="filter-toggle-btn" id="filterToggleBtn">
-        ⚙️ Bộ lọc nâng cao <span id="toggleArrow">▼</span>
+    <!-- KHU VỰC 2 NÚT CHUYỂN TAB -->
+    <div class="tab-nav">
+        <button id="btnTabIcd" class="tab-btn" onclick="switchTab('view-icd10', this)">🔍 Tra cứu ICD-10</button>
+        <button id="btnTabCd" class="tab-btn active" onclick="switchTab('view-chidinh', this)">📋 Tra cứu Chỉ định Phù hợp</button>
     </div>
 
-    <div class="filters-wrapper" id="filtersWrapper">
-        <div class="filter-item"><label><input type="checkbox" id="f_hopLeChinh"> Hợp lệ làm bệnh chính (Sạch)</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col24"> KHÔNG dùng làm bệnh chính</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col25"> Không khuyến khích bệnh chính</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col26"> Có mã cụ thể hơn (4-5 ký tự)</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col27"> Chỉ mã hóa tử vong</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col28"> Chỉ có ở Nữ</label></div>
-        <div class="filter-item"><label><input type="checkbox" id="f_col29"> Chỉ có ở Nam</label></div>
+    <!-- ======================= TAB 1: TRA CỨU ICD-10 ======================= -->
+    <div id="view-icd10" class="tab-content">
+        <h1>Hệ thống Tra cứu ICD-10</h1>
+        
+        <input type="text" id="searchBox" class="search-box" placeholder="Gõ triệu chứng, Tên bệnh hoặc Mã ICD...">
+
+        <div class="filter-toggle-btn" id="filterToggleBtn">
+            ⚙️ Bộ lọc nâng cao <span id="toggleArrow">▼</span>
+        </div>
+
+        <div class="filters-wrapper" id="filtersWrapper">
+            <div class="filter-item"><label><input type="checkbox" id="f_hopLeChinh"> Hợp lệ làm bệnh chính (Sạch)</label></div>
+            <div class="filter-item"><label><input type="checkbox" id="f_col24"> KHÔNG dùng làm bệnh chính</label></div>
+            <div class="filter-item"><label><input type="checkbox" id="f_col25"> Không khuyến khích bệnh chính</label></div>
+            <div class="filter-item"><label><input type="checkbox" id="f_col26"> Có mã cụ thể hơn (4-5 ký tự)</label></div>
+            <div class="filter-item"><label><input type="checkbox" id="f_col27"> Chỉ mã hóa tử vong</label></div>
+            <div class="filter-item"><label><input type="checkbox" id="f_col28"> Chỉ có ở Nữ</label></div>
+            <div class="filter-item"><label><input type="checkbox" id="f_col29"> Chỉ có ở Nam</label></div>
+        </div>
+
+        <div class="status-msg" id="statusMsg">Đang tải dữ liệu...</div>
+
+        <div class="table-responsive">
+            <table id="icdTable">
+                <thead>
+                    <tr>
+                        <th style="width: 12%">Mã ICD</th>
+                        <th style="width: 35%">Tên Bệnh</th>
+                        <th style="width: 28%">Triệu chứng gợi ý / Ghi chú</th>
+                        <th style="width: 25%">Trạng thái / Quy tắc</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="card-list" id="cardList"></div>
     </div>
 
-    <div class="status-msg" id="statusMsg">Đang tải dữ liệu...</div>
+    <!-- ======================= TAB 2: TRA CỨU CHỈ ĐỊNH ======================= -->
+    <div id="view-chidinh" class="tab-content active">
+        <h1 style="color: #28a745;">Tra cứu Chỉ định Phù hợp Danh mục</h1>
+        
+        <input type="text" id="searchCdBox" class="search-box cd-border" placeholder="Gõ mã dịch vụ, tên dịch vụ kỹ thuật hoặc mã ICD cần đối chiếu...">
 
-    <div class="table-responsive">
-        <table id="icdTable">
-            <thead>
-                <tr>
-                    <th style="width: 12%">Mã ICD</th>
-                    <th style="width: 35%">Tên Bệnh</th>
-                    <th style="width: 28%">Triệu chứng gợi ý / Ghi chú</th>
-                    <th style="width: 25%">Trạng thái / Quy tắc</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
+        <div class="status-msg" id="statusCdMsg" style="color: #28a745;">Đang nạp dữ liệu chỉ định...</div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="cd-header" style="width: 15%">Mã Dịch vụ</th>
+                        <th class="cd-header" style="width: 35%">Tên Dịch vụ Kỹ thuật</th>
+                        <th class="cd-header" style="width: 20%">Chuyên khoa / Nhóm</th>
+                        <th class="cd-header" style="width: 30%">Mã ICD phù hợp / Điều kiện đi kèm</th>
+                    </tr>
+                </thead>
+                <tbody id="tableCdBody"></tbody>
+            </table>
+        </div>
+
+        <div class="card-list" id="cardCdList"></div>
     </div>
-
-    <div class="card-list" id="cardList"></div>
 </div>
 
+<!-- Nạp file dữ liệu ICD-10 của bạn -->
 <script src="icd10.js"></script>
 
 <script>
+    // ==========================================
+    // 1. DỮ LIỆU MẪU CHỈ ĐỊNH (Thay thế hoặc tách file sau này)
+    // ==========================================
+    // Bạn có thể đưa biến này sang 1 file riêng như 'chidinh.js' tương tự 'icd10.js'
+    const chiDinhData = [
+        {
+            maDV: "XN001",
+            tenDV: "Tổng phân tích tế bào máu ngoại vi bằng máy đếm laser",
+            nhom: "Huyết học",
+            dsICD: ["D64", "D50", "A00", "A01", "B50"],
+            ghiChu: "Chỉ định khi nghi ngờ thiếu máu hoặc nhiễm trùng"
+        },
+        {
+            maDV: "CĐHA002",
+            tenDV: "Chụp X-quang ngực thẳng tiêu chuẩn",
+            nhom: "Chẩn đoán hình ảnh",
+            dsICD: ["J18", "J20", "A15", "J45"],
+            ghiChu: "Kiểm tra tổn thương nhu mô phổi"
+        },
+        {
+            maDV: "TDCN003",
+            tenDV: "Điện tâm đồ vi tính (ECG 12 chuyển đạo)",
+            nhom: "Thăm dò chức năng",
+            dsICD: ["I10", "I20", "I25", "R07"],
+            ghiChu: "Đau thắt ngực, tăng huyết áp"
+        }
+    ];
+
+    // ==========================================
+    // 2. CHUYỂN ĐỔI TAB (TABS LOGIC)
+    // ==========================================
+    function switchTab(tabId, clickedBtn) {
+        // Ẩn tất cả các màn hình tab
+        document.querySelectorAll('.tab-content').forEach(view => view.classList.remove('active'));
+        // Bỏ active của các nút bấm
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        // Kích hoạt tab và nút được bấm
+        document.getElementById(tabId).classList.add('active');
+        clickedBtn.classList.add('active');
+    }
+
+    // ==========================================
+    // 3. XỬ LÝ CHỨC NĂNG ICD-10
+    // ==========================================
     const filterToggleBtn = document.getElementById('filterToggleBtn');
     const filtersWrapper = document.getElementById('filtersWrapper');
     const toggleArrow = document.getElementById('toggleArrow');
@@ -125,10 +242,11 @@
     });
 
     function removeVietnameseTones(str) {
+        if (!str) return "";
         str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
         str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
         str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i");
-        str = str.replace(/ò|á|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
+        str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
         str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u");
         str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y");
         str = str.replace(/đ/g,"d");
@@ -145,26 +263,18 @@
         checkbox.addEventListener('change', filterData);
     });
 
-    // --- THUẬT TOÁN TỐI ƯU: BIẾN ĐỐI TƯỢNG THÀNH CHUỖI ĐỂ QUÉT TẤT CẢ CÁC CỘT ---
     function extractAllStarCodes(item) {
-        // Chuyển toàn bộ dòng dữ liệu (tất cả các cột) thành một chuỗi duy nhất để quét
         const objectString = JSON.stringify(item);
-        
-        // Loại bỏ trường mã chính (ma) khỏi chuỗi quét để tránh việc thuật toán nhận nhầm nếu mã chính chứa dấu sao
         const stringToScan = objectString.replace(new RegExp(`"ma"\\s*:\\s*"${item.ma}"`), '');
-
-        // Regex bắt tất cả các định dạng mã sao như G01*, M01.1*, G05.0*...
         const regex = /[A-Z][0-9][0-9](?:\.[0-9]{1,2})?[\*]|[\*][A-Z][0-9][0-9](?:\.[0-9]{1,2})?/gi;
         const matches = stringToScan.match(regex);
-        
         if (!matches) return [];
-        
-        // Làm sạch định dạng chuỗi và loại bỏ các mã bị trùng lặp
         const cleanCodes = matches.map(code => code.toUpperCase().trim());
         return [...new Set(cleanCodes)];
     }
 
     function filterData() {
+        if (typeof icd10Data === 'undefined') return;
         const keyword = removeVietnameseTones(searchBox.value);
         
         const f_hopLeChinh = document.getElementById('f_hopLeChinh').checked;
@@ -215,10 +325,8 @@
             let badgesHTML = "";
             let mappingHTML = "";
 
-            // Trích xuất danh sách mã sao từ toàn bộ các cột trong đối tượng dữ liệu
             const starCodes = extractAllStarCodes(item);
 
-            // --- KIỂM TRA QUY TẮC MÃ KÉP THEO QĐ 1849 ---
             if (item.ma.includes('*')) {
                 isRowDisabled = true; 
                 badgesHTML += `<span class="badge bg-danger">Mã dấu sao (*) - Chỉ làm bệnh kèm</span>`;
@@ -236,7 +344,6 @@
                 }
             }
 
-            // --- KIỂM TRA CÁC CỘT QUY TẮC KHÁC ---
             if (item.col24 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Không làm bệnh chính</span>`; }
             if (item.col25 === 1) { badgesHTML += `<span class="badge bg-warning">Không khuyến khích bệnh chính</span>`; }
             if (item.col26 === 1) { isRowDisabled = true; badgesHTML += `<span class="badge bg-danger">Cần mã cụ thể hơn</span>`; }
@@ -246,7 +353,7 @@
             
             if (!badgesHTML) { badgesHTML = `<span class="badge bg-success">Hợp lệ làm bệnh chính</span>`; }
 
-            // 1. Render dạng Bảng (Máy tính)
+            // Bảng máy tính
             const tr = document.createElement('tr');
             if (isRowDisabled) tr.classList.add("disabled-row");
             tr.innerHTML = `
@@ -260,9 +367,9 @@
             `;
             tableBody.appendChild(tr);
 
-            // 2. Render dạng Thẻ (Điện thoại)
+            // Thẻ điện thoại
             const card = document.createElement('div');
-            card.classList.add("icd-card");
+            card.classList.add("custom-card");
             if (isRowDisabled) card.classList.add("disabled-card");
             card.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -277,7 +384,80 @@
         });
     }
 
-    window.onload = () => { filterData(); };
+    // ==========================================
+    // 4. XỬ LÝ CHỨC NĂNG TRA CỨU CHỈ ĐỊNH
+    // ==========================================
+    const searchCdBox = document.getElementById('searchCdBox');
+    const tableCdBody = document.getElementById('tableCdBody');
+    const cardCdList = document.getElementById('cardCdList');
+    const statusCdMsg = document.getElementById('statusCdMsg');
+
+    searchCdBox.addEventListener('input', filterChiDinhData);
+
+    function filterChiDinhData() {
+        const keyword = removeVietnameseTones(searchCdBox.value);
+
+        const filtered = chiDinhData.filter(item => {
+            const listIcdStr = item.dsICD ? item.dsICD.join(" ") : "";
+            const textTarget = removeVietnameseTones(`${item.maDV} ${item.tenDV} ${item.nhom} ${listIcdStr}`);
+            return !keyword || textTarget.includes(keyword);
+        });
+
+        renderChiDinhUI(filtered);
+    }
+
+    function renderChiDinhUI(data) {
+        tableCdBody.innerHTML = '';
+        cardCdList.innerHTML = '';
+        statusCdMsg.innerText = `Tìm thấy ${data.length} chỉ định dịch vụ phù hợp.`;
+
+        if (data.length === 0) {
+            const noResultHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy dịch vụ phù hợp</div>`;
+            tableCdBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Không tìm thấy dịch vụ phù hợp</td></tr>`;
+            cardCdList.innerHTML = noResultHTML;
+            return;
+        }
+
+        data.forEach(item => {
+            const icdBadges = (item.dsICD || []).map(code => `<span class="icd-target-tag">${code}</span>`).join(" ");
+
+            // Render dòng bảng máy tính
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong style="color: #28a745;">${item.maDV}</strong></td>
+                <td>
+                    <div><strong>${item.tenDV}</strong></div>
+                    ${item.ghiChu ? `<small style="color: #666;">📝 ${item.ghiChu}</small>` : ''}
+                </td>
+                <td><span class="badge bg-info">${item.nhom}</span></td>
+                <td><div>${icdBadges || '---'}</div></td>
+            `;
+            tableCdBody.appendChild(tr);
+
+            // Render thẻ điện thoại
+            const card = document.createElement('div');
+            card.classList.add("custom-card", "cd-card");
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 16px; color: #28a745; font-weight: bold;">${item.maDV}</span>
+                    <span class="badge bg-info">${item.nhom}</span>
+                </div>
+                <div style="font-size: 15px; font-weight: bold; margin-bottom: 6px;">${item.tenDV}</div>
+                ${item.ghiChu ? `<div style="font-size: 13px; color: #555; margin-bottom: 6px;">📝 ${item.ghiChu}</div>` : ''}
+                <div style="margin-top: 6px;">
+                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">Mã ICD phù hợp gợi ý:</div>
+                    ${icdBadges}
+                </div>
+            `;
+            cardCdList.appendChild(card);
+        });
+    }
+
+    // Tự động tải dữ liệu khi trang khởi động
+    window.onload = () => {
+        filterData();
+        filterChiDinhData();
+    };
 </script>
 </body>
 </html>
