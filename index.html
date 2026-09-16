@@ -29,21 +29,39 @@
             margin-bottom: 15px; 
         }
         /* Định dạng từng hàng bệnh và mã ICD thẳng hàng, có kẻ phân cách */
-        .item-row-cell {
-            padding: 8px 4px;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            align-items: center;
-            min-height: 28px;
-            box-sizing: border-box;
+       /* Bảng lồng con để khóa chặt từng cặp hàng Mã ICD và Tên bệnh */
+        .nested-subtable {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+            background: transparent;
         }
-        /* Hàng cuối cùng không cần kẻ viền dưới */
-        .item-row-cell:last-child {
+        .nested-subtable tr {
+            border-bottom: 1px solid #dee2e6;
+            background: transparent !important;
+        }
+        .nested-subtable tr:last-child {
             border-bottom: none;
         }
-        /* Xóa padding mặc định của 2 cột chứa danh sách con để đường kẻ tràn sát mép ô */
-        td.cell-list-container {
-            padding: 0 8px !important;
+        .nested-subtable td {
+            border: none !important;
+            padding: 8px 6px !important;
+            vertical-align: middle; /* Canh giữa nhãn mã ICD theo chiều dọc của dòng chữ */
+        }
+        .nested-subtable td.td-icd {
+            width: 90px;
+            min-width: 90px;
+            text-align: center;
+            border-right: 1px solid #dee2e6 !important; /* Vạch kẻ dọc ngăn cách giữa mã và tên */
+        }
+        .nested-subtable td.td-name {
+            text-align: left;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+        /* Xóa viền và khoảng cách dư của ô cha */
+        td.cell-merge-container {
+            padding: 0 !important;
             vertical-align: top;
         }
         /* =========================================================================
@@ -621,14 +639,14 @@
 
     // Hiển thị dữ liệu 3 Cột: Kỹ thuật | Mã ICD | Tên bệnh
    // =========================================================================
-    // HÀM HIỂN THỊ GIAO DIỆN CHỈ ĐỊNH (KẺ HÀNG TỪNG CẶP MÃ VÀ TÊN BỆNH)
+// =========================================================================
+    // HÀM HIỂN THỊ CHỈ ĐỊNH (KHÓA HÀNG BẰNG BẢNG CON - KHÔNG BAO GIỜ BỊ LỆCH)
     // =========================================================================
     function renderChiDinhUI(data) {
         tableCdBody.innerHTML = '';
         cardCdList.innerHTML = '';
         statusCdMsg.innerText = `Tìm thấy ${data.length} kỹ thuật chỉ định phù hợp.`;
 
-        // Xử lý khi không tìm thấy kết quả
         if (data.length === 0) {
             tableCdBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</td></tr>`;
             cardCdList.innerHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</div>`;
@@ -636,43 +654,43 @@
         }
 
         data.forEach(item => {
-            let icdColumnHTML = "";
-            let nameColumnHTML = "";
+            // Xây dựng các hàng bên trong bảng con
+            let subRowsHTML = "";
 
             if (item.danhSachICD && item.danhSachICD.length > 0) {
                 item.danhSachICD.forEach(icd => {
-                    // Cột 2: Mã ICD bọc trong hàng có kẻ viền
-                    icdColumnHTML += `
-                        <div class="item-row-cell">
-                            <span class="icd-code-badge">${icd.maICD}</span>
-                        </div>
+                    subRowsHTML += `
+                        <tr>
+                            <td class="td-icd">
+                                <span class="icd-code-badge">${icd.maICD}</span>
+                            </td>
+                            <td class="td-name">
+                                <span>${icd.tenBenh}</span> <strong style="color: #0056b3;">(${icd.maICD})</strong>
+                            </td>
+                        </tr>
                     `;
-                    
-                    // Cột 3: Tên bệnh kèm mã ICD bọc trong hàng có kẻ viền tương ứng
-                    benhKemIcdHTML = `
-                        <div class="item-row-cell">
-                            <span>${icd.tenBenh}</span>&nbsp;<strong style="color: #0056b3;">(${icd.maICD})</strong>
-                        </div>
-                    `;
-                    nameColumnHTML += benhKemIcdHTML;
                 });
             } else {
-                icdColumnHTML = `<div class="item-row-cell">---</div>`;
-                nameColumnHTML = `<div class="item-row-cell">---</div>`;
+                subRowsHTML = `<tr><td class="td-icd">---</td><td class="td-name">---</td></tr>`;
             }
 
-            // 1. Dòng bảng dành cho MÁY TÍNH
+            // 1. Dòng bảng dành cho MÁY TÍNH (Cột 2 và 3 được ghép làm 1 vùng chứa bảng con)
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="padding: 12px; vertical-align: top;">
+                <td style="padding: 12px; vertical-align: top; width: 22%;">
                     <strong style="color: #0056b3; font-size: 15px;">${item.tenDV}</strong>
                 </td>
-                <td class="cell-list-container">${icdColumnHTML}</td>
-                <td class="cell-list-container">${nameColumnHTML}</td>
+                <td colspan="2" class="cell-merge-container" style="width: 78%;">
+                    <table class="nested-subtable">
+                        <tbody>
+                            ${subRowsHTML}
+                        </tbody>
+                    </table>
+                </td>
             `;
             tableCdBody.appendChild(tr);
 
-            // 2. Thẻ dành cho ĐIỆN THOẠI (được kẻ từng dòng kèm viền đứt đoạn)
+            // 2. Giao diện dạng Thẻ dành cho ĐIỆN THOẠI
             const card = document.createElement('div');
             card.classList.add("custom-card", "cd-card");
             
