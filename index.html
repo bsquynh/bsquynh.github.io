@@ -598,6 +598,25 @@
 
     searchCdBox.addEventListener('input', filterChiDinhData);
 
+   // HÀM TIỀN XỬ LÝ: PHÂN BIỆT RÕ GIỮA "CỔ" (BỘ PHẬN) VÀ "CÓ" (CÓ TIÊM THUỐC)
+    // =========================================================================
+    function tienXuLyChuoi(str) {
+        if (!str) return "";
+        let text = str.toLowerCase();
+
+        // 1. Chuyển đổi các cụm "có tiêm / có thuốc" thành từ khóa riêng để không bị biến thành "co"
+        text = text.replace(/có\s+(tiêm|thuốc|tương phản|cản quang)/gi, "kem_tiem_$1");
+
+        // 2. Chuyển đổi từ "cổ" (bộ phận giải phẫu) thành một định danh riêng biệt "vung_co"
+        text = text.replace(/\bcổ\b/gi, "vung_co");
+
+        // 3. Sau đó mới loại bỏ dấu tiếng Việt thông thường
+        return removeVietnameseTones(text);
+    }
+
+    // =========================================================================
+    // HÀM LỌC CHỈ ĐỊNH: LOẠI BỎ TRIỆT ĐỂ HIỂU NHẦM GIỮA "CỔ" VÀ "CÓ TIÊM"
+    // =========================================================================
     function filterChiDinhData() {
         if (typeof chiDinhData === 'undefined') return;
 
@@ -607,22 +626,24 @@
             return;
         }
 
-        // Tách các từ khóa người dùng nhập thành mảng các từ đơn
-        const keywords = removeVietnameseTones(rawInput).split(/\s+/).filter(Boolean);
+        // Tiền xử lý từ khóa người dùng nhập vào
+        const cleanInput = tienXuLyChuoi(rawInput);
+        const keywords = cleanInput.split(/\s+/).filter(Boolean);
 
         const filtered = chiDinhData.filter(item => {
-            // Chuỗi nguồn DUY NHẤT để tìm kiếm: Tên dịch vụ kỹ thuật
-            const techNameNormalized = chuanHoaTuKhoa(item.tenDV);
+            // Tiền xử lý tên kỹ thuật
+            let techNameClean = tienXuLyChuoi(item.tenDV);
+            techNameClean = chuanHoaTuKhoa(techNameClean);
 
-            // BẮT BUỘC: Mọi từ khóa nhập vào phải xuất hiện chuẩn xác trong TÊN KỸ THUẬT
+            // Kiểm tra: Tất cả các từ khóa bạn gõ đều phải xuất hiện trong TÊN KỸ THUẬT
             return keywords.every(kw => {
-                const kwNoTone = removeVietnameseTones(kw);
-                const synonym = tuDongNghia[kwNoTone] || "";
+                const kwClean = removeVietnameseTones(kw);
+                const synonym = tuDongNghia[kwClean] || "";
 
-                // So khớp nguyên từ (\b) để chống nhầm lẫn từ
-                const regexKw = new RegExp(`\\b${kwNoTone}\\b`, 'i');
-                const matchDirect = regexKw.test(techNameNormalized);
-                const matchSynonym = synonym ? new RegExp(`\\b${synonym}\\b`, 'i').test(techNameNormalized) : false;
+                // So khớp ranh giới từ \b để đảm bảo chính xác tuyệt đối
+                const regexKw = new RegExp(`\\b${kwClean}\\b`, 'i');
+                const matchDirect = regexKw.test(techNameClean);
+                const matchSynonym = synonym ? new RegExp(`\\b${synonym}\\b`, 'i').test(techNameClean) : false;
 
                 return matchDirect || matchSynonym;
             });
