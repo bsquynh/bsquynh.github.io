@@ -467,34 +467,79 @@
         return [...new Set(cleanCodes)];
     }
 
-    function filterData() {
-        if (typeof icd10Data === 'undefined') return;
-        const keyword = removeVietnameseTones(searchBox.value);
-        
-        const f_hopLeChinh = document.getElementById('f_hopLeChinh').checked;
-        const f_col24 = document.getElementById('f_col24').checked;
-        const f_col25 = document.getElementById('f_col25').checked;
-        const f_col26 = document.getElementById('f_col26').checked;
-        const f_col27 = document.getElementById('f_col27').checked;
-        const f_col28 = document.getElementById('f_col28').checked;
-        const f_col29 = document.getElementById('f_col29').checked;
+   // HÀM LỌC CHỈ ĐỊNH THÔNG MINH - ƯU TIÊN TÊN KỸ THUẬT VÀ LỌC BỆNH SÁT NGHĨA
+    // =========================================================================
+    function filterChiDinhData() {
+        if (typeof chiDinhData === 'undefined') return;
 
-        const filtered = icd10Data.filter(item => {
-            const textTarget = removeVietnameseTones(`${item.ma} ${item.ten} ${item.trieuChung || ''}`);
-            if (keyword && !textTarget.includes(keyword)) return false;
+        const rawInput = searchCdBox.value.trim();
+        if (!rawInput) {
+            renderChiDinhUI(chiDinhData);
+            return;
+        }
 
-            if (f_hopLeChinh && (item.col24 === 1 || item.col25 === 1 || item.col26 === 1 || item.ma.includes('*'))) return false;
-            if (f_col24 && item.col24 !== 1) return false;
-            if (f_col25 && item.col25 !== 1) return false;
-            if (f_col26 && item.col26 !== 1) return false;
-            if (f_col27 && item.col27 !== 1) return false;
-            if (f_col28 && item.col28 !== 1) return false;
-            if (f_col29 && item.col29 !== 1) return false;
+        // Chuẩn hóa chuỗi người dùng gõ
+        const inputNormalized = removeVietnameseTones(rawInput);
+        const keywords = inputNormalized.split(/\s+/).filter(Boolean);
 
-            return true;
+        // 1. Kiểm tra trường hợp người dùng đang tìm kiếm vùng cổ
+        // Nếu gõ "co" độc lập (không đi kèm "chan", "tay", "dui"), ta ưu tiên vùng cổ/cột sống cổ
+        const isSearchingNeck = keywords.includes("co") && 
+                                !keywords.includes("chan") && 
+                                !keywords.includes("tay") && 
+                                !keywords.includes("dui");
+
+        let results = [];
+
+        chiDinhData.forEach(item => {
+            const tenDVNormalized = removeVietnameseTones(item.tenDV);
+            const sourceTechText = chuanHoaTuKhoa(`${item.maDV} ${item.tenDV} ${item.nhom}`);
+
+            // Kiểm tra xem TÊN KỸ THUẬT có khớp với tất cả từ khóa không
+            const matchInTechTitle = keywords.every(kw => {
+                const kwNoTone = removeVietnameseTones(kw);
+                const synonym = tuDongNghia[kwNoTone] || "";
+                return sourceTechText.includes(kwNoTone) || (synonym && sourceTechText.includes(synonym));
+            });
+
+            // Lọc các dòng bệnh/ICD con khớp với từ khóa
+            const matchedDiseases = (item.danhSachICD || []).filter(icd => {
+                const icdText = removeVietnameseTones(`${icd.maICD} ${icd.tenBenh}`);
+                return keywords.some(kw => icdText.includes(kw));
+            });
+
+            // LOẠI TRỪ CÁC TỪ GHÉP GÂY NHẦM LẪN KHI TÌM "CỔ"
+            if (isSearchingNeck) {
+                // Nếu tên kỹ thuật chứa "khop", "xuong chi" mà bệnh chỉ có "co chan", "co tay", "co xuong dui" -> Bỏ qua
+                const isLimbTech = tenDVNormalized.includes("chi") || tenDVNormalized.includes("khop");
+                const isSpineOrNeckTech = tenDVNormalized.includes("co") || tenDVNormalized.includes("cot song");
+                
+                if (isLimbTech && !isSpineOrNeckTech) {
+                    return; // Bỏ qua các kỹ thuật CT xương chi, khớp gối, cổ chân...
+                }
+            }
+
+            // Nếu tên kỹ thuật khớp: hiển thị kỹ thuật đó
+            if (matchInTechTitle) {
+                // Nếu có bệnh khớp cụ thể thì ưu tiên hiển thị các bệnh khớp, nếu không thì hiển thị danh sách của kỹ thuật
+                results.push({
+                    ...item,
+                    priority: 2 // Độ ưu tiên cao nhất: Khớp ngay ở tên kỹ thuật
+                });
+            } else if (matchedDiseases.length > 0) {
+                // Nếu chỉ khớp ở danh mục bệnh con bên trong
+                results.push({
+                    ...item,
+                    danhSachICD: matchedDiseases, // Chỉ giữ lại các bệnh liên quan trực tiếp
+                    priority: 1 // Độ ưu tiên thấp hơn
+                });
+            }
         });
 
-        renderUI(filtered);
+        // Sắp xếp: Ưu tiên kỹ thuật đúng tên lên đầu
+        results.sort((a, b) => b.priority - a.priority);
+
+        renderChiDinhUI(results);
     }
 
     function renderUI(data) {
