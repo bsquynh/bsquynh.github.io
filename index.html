@@ -3,13 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Tra cứu Y tế: ICD-10 & Chỉ định</title>
+    <title>Hệ thống Tra cứu Y tế: ICD-10 & Chỉ định Phù hợp</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 10px; background-color: #f4f6f9; color: #333; }
-        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #0056b3; font-size: 22px; margin-top: 5px; margin-bottom: 15px; }
+        /* =========================================================================
+           1. ĐỊNH DẠNG CHUNG (GLOBAL STYLES)
+           ========================================================================= */
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px; 
+            background-color: #f4f6f9; 
+            color: #333; 
+        }
+        .container { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            text-align: center; 
+            font-size: 22px; 
+            margin-top: 5px; 
+            margin-bottom: 15px; 
+        }
 
-        /* --- PHẦN 1: NÚT CHUYỂN TAB --- */
+        /* =========================================================================
+           2. THANH ĐIỀU HƯỚNG TAB
+           ========================================================================= */
         .tab-nav {
             display: flex;
             gap: 10px;
@@ -38,40 +60,143 @@
             color: #fff;
         }
         .tab-content {
-            display: none; /* Mặc định ẩn phân vùng */
+            display: none; /* Mặc định ẩn tất cả các tab */
         }
         .tab-content.active {
-            display: block; /* Chỉ hiện phân vùng đang được kích hoạt */
+            display: block; /* Chỉ hiển thị tab có class active */
         }
 
-        /* --- PHẦN 2: Ô TÌM KIẾM & BỘ LỌC DÙNG CHUNG --- */
-        .search-box { width: 100%; padding: 14px; font-size: 16px; border: 2px solid #007bff; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 0; z-index: 100; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .search-box.cd-border { border-color: #28a745; }
+        /* =========================================================================
+           3. Ô TÌM KIẾM & BỘ LỌC DÙNG CHUNG
+           ========================================================================= */
+        .search-box { 
+            width: 100%; 
+            padding: 14px; 
+            font-size: 16px; 
+            border: 2px solid #007bff; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            margin-bottom: 10px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        }
+        .search-box.cd-border { 
+            border-color: #28a745; 
+        }
         
-        .filter-toggle-btn { width: 100%; padding: 10px; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; font-weight: bold; color: #495057; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 10px; transition: background 0.2s; }
-        .filter-toggle-btn:hover { background-color: #dee2e6; }
+        .filter-toggle-btn { 
+            width: 100%; 
+            padding: 10px; 
+            background-color: #e9ecef; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #495057; 
+            text-align: center; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px; 
+            margin-bottom: 10px; 
+            transition: background 0.2s; 
+        }
+        .filter-toggle-btn:hover { 
+            background-color: #dee2e6; 
+        }
         
-        .filters-wrapper { display: none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; }
-        .filters-wrapper.show { display: grid; }
+        .filters-wrapper { 
+            display: none; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 10px; 
+            margin-bottom: 15px; 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 15px; 
+            border-radius: 8px; 
+        }
+        .filters-wrapper.show { 
+            display: grid; 
+        }
         
-        .filter-item { display: flex; align-items: center; font-size: 14px; cursor: pointer; user-select: none; }
-        .filter-item input { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
+        .filter-item { 
+            display: flex; 
+            align-items: center; 
+            font-size: 14px; 
+            cursor: pointer; 
+            user-select: none; 
+        }
+        .filter-item input { 
+            margin-right: 8px; 
+            width: 18px; 
+            height: 18px; 
+            cursor: pointer; 
+        }
         
-        /* --- PHẦN 3: BẢNG TRÊN MÁY TÍNH --- */
-        .table-responsive { width: 100%; overflow-x: auto; display: block; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        th.cd-header { background-color: #28a745; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
+        /* =========================================================================
+           4. BẢNG HIỂN THỊ TRÊN MÁY TÍNH (DESKTOP)
+           ========================================================================= */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            display: block; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+            background: white; 
+        }
+        th, td { 
+            border: 1px solid #dee2e6; 
+            padding: 12px; 
+            text-align: left; 
+            vertical-align: top; 
+        }
+        th { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        th.cd-header { 
+            background-color: #28a745; 
+        }
+        tr:nth-child(even) { 
+            background-color: #f8f9fa; 
+        }
         
-        /* --- PHẦN 4: GIAO DIỆN DẠNG THẺ (CARD) ĐIỆN THOẠI --- */
-        .card-list { display: none; }
-        .custom-card { background: #fff; border: 1px solid #dee2e6; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .cd-card { border-left-color: #28a745; }
+        /* =========================================================================
+           5. GIAO DIỆN THẺ TRÊN ĐIỆN THOẠI (MOBILE CARD)
+           ========================================================================= */
+        .card-list { 
+            display: none; 
+        }
+        .custom-card { 
+            background: #fff; 
+            border: 1px solid #dee2e6; 
+            border-left: 5px solid #007bff; 
+            padding: 15px; 
+            margin-bottom: 12px; 
+            border-radius: 6px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+        }
+        .cd-card { 
+            border-left-color: #28a745; 
+        }
         
-        /* BADGES & NHÃN */
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; display: inline-block; margin: 2px; }
+        /* CÁC NHÃN TRẠNG THÁI & BADGES */
+        .badge { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            color: white; 
+            display: inline-block; 
+            margin: 2px; 
+        }
         .bg-success { background-color: #28a745; }
         .bg-danger { background-color: #dc3545; }
         .bg-warning { background-color: #ffc107; color: #212529; }
@@ -80,15 +205,75 @@
         .bg-male { background-color: #20c997; }
         .bg-purple { background-color: #6f42c1; } 
         
-        .mapping-box { background-color: #fff3cd; border: 1px solid #ffeba8; color: #856404; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
-        .mapping-title { font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-        .star-tag { background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px; font-size: 12px; }
-        .icd-target-tag { background-color: #007bff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px; font-size: 12px; }
+        .mapping-box { 
+            background-color: #fff3cd; 
+            border: 1px solid #ffeba8; 
+            color: #856404; 
+            padding: 8px 12px; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            margin-top: 8px; 
+        }
+        .mapping-title { 
+            font-weight: bold; 
+            margin-bottom: 4px; 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+        }
+        .star-tag { 
+            background-color: #dc3545; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            display: inline-block; 
+            margin: 2px; 
+            font-size: 12px; 
+        }
         
-        .disabled-row { color: #6c757d; background-color: #f1f3f5 !important; }
-        .disabled-card { border-left-color: #dc3545; background-color: #f8f9fa; color: #6c757d; }
-        .status-msg { margin-top: 5px; margin-bottom: 10px; font-weight: bold; color: #0056b3; font-size: 14px; }
+        /* Nhãn mã ICD cho bảng tra cứu chỉ định */
+        .icd-code-badge { 
+            background-color: #007bff; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            display: inline-block; 
+            font-size: 12px; 
+            min-width: 48px; 
+            text-align: center; 
+        }
+        .icd-item-row { 
+            margin-bottom: 6px; 
+            padding-bottom: 4px; 
+            border-bottom: 1px dashed #e9ecef; 
+            font-size: 13px; 
+            line-height: 1.4; 
+        }
+        .icd-item-row:last-child { 
+            border-bottom: none; 
+            margin-bottom: 0; 
+        }
+        
+        .disabled-row { 
+            color: #6c757d; 
+            background-color: #f1f3f5 !important; 
+        }
+        .disabled-card { 
+            border-left-color: #dc3545; 
+            background-color: #f8f9fa; 
+            color: #6c757d; 
+        }
+        .status-msg { 
+            margin-top: 5px; 
+            margin-bottom: 10px; 
+            font-weight: bold; 
+            color: #0056b3; 
+            font-size: 14px; 
+        }
 
+        /* Tối ưu hóa hiển thị khi xem trên màn hình nhỏ / điện thoại */
         @media (max-width: 768px) {
             body { margin: 5px; }
             .container { padding: 10px; border-radius: 0; box-shadow: none; }
@@ -106,15 +291,15 @@
 <body>
 
 <div class="container">
-    <!-- KHU VỰC 2 NÚT CHUYỂN TAB -->
+    <!-- THANH 2 NÚT BẤM CHUYỂN QUA LẠI GIỮA 2 MÀN HÌNH -->
     <div class="tab-nav">
         <button id="btnTabIcd" class="tab-btn" onclick="switchTab('view-icd10', this)">🔍 Tra cứu ICD-10</button>
         <button id="btnTabCd" class="tab-btn active" onclick="switchTab('view-chidinh', this)">📋 Tra cứu Chỉ định Phù hợp</button>
     </div>
 
-    <!-- ======================= TAB 1: TRA CỨU ICD-10 ======================= -->
+    <!-- ======================= MÀN HÌNH 1: TRA CỨU ICD-10 ======================= -->
     <div id="view-icd10" class="tab-content">
-        <h1>Hệ thống Tra cứu ICD-10</h1>
+        <h1 style="color: #0056b3;">Hệ thống Tra cứu ICD-10</h1>
         
         <input type="text" id="searchBox" class="search-box" placeholder="Gõ triệu chứng, Tên bệnh hoặc Mã ICD...">
 
@@ -151,53 +336,67 @@
         <div class="card-list" id="cardList"></div>
     </div>
 
-    <!-- ======================= TAB 2: TRA CỨU CHỈ ĐỊNH ======================= -->
+    <!-- ======================= MÀN HÌNH 2: TRA CỨU CHỈ ĐỊNH (MẶC ĐỊNH MỞ) ======================= -->
     <div id="view-chidinh" class="tab-content active">
         <h1 style="color: #28a745;">Tra cứu Chỉ định Phù hợp Danh mục</h1>
         
-        <input type="text" id="searchCdBox" class="search-box cd-border" placeholder="Gõ mã dịch vụ, tên dịch vụ kỹ thuật hoặc mã ICD cần đối chiếu...">
+        <input type="text" id="searchCdBox" class="search-box cd-border" placeholder="Gõ từ khóa: MRI, CT, tên kỹ thuật, mã ICD hoặc tên bệnh...">
 
         <div class="status-msg" id="statusCdMsg" style="color: #28a745;">Đang nạp dữ liệu chỉ định...</div>
 
+        <!-- BẢNG HIỂN THỊ ĐÚNG 3 CỘT: KỸ THUẬT - MÃ ICD - TÊN BỆNH -->
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th class="cd-header" style="width: 15%">Mã Dịch vụ</th>
-                        <th class="cd-header" style="width: 35%">Tên Dịch vụ Kỹ thuật</th>
-                        <th class="cd-header" style="width: 20%">Chuyên khoa / Nhóm</th>
-                        <th class="cd-header" style="width: 30%">Mã ICD phù hợp / Điều kiện đi kèm</th>
+                        <th class="cd-header" style="width: 40%">Kỹ thuật</th>
+                        <th class="cd-header" style="width: 15%">Mã ICD</th>
+                        <th class="cd-header" style="width: 45%">Tên bệnh</th>
                     </tr>
                 </thead>
                 <tbody id="tableCdBody"></tbody>
             </table>
         </div>
 
+        <!-- Giao diện xem trên điện thoại di động -->
         <div class="card-list" id="cardCdList"></div>
     </div>
 </div>
 
-<!-- Nạp file dữ liệu ICD-10 của bạn -->
+<!-- NẠP 2 FILE DỮ LIỆU JS ĐỘC LẬP TỪ BÊN NGOÀI -->
 <script src="icd10.js"></script>
 <script src="chidinh.js"></script>
-<script>
 
-    // 2. CHUYỂN ĐỔI TAB (TABS LOGIC)
-    // ==========================================
+<script>
+    // =========================================================================
+    // 1. CHUYỂN ĐỔI TAB (TABS LOGIC)
+    // =========================================================================
     function switchTab(tabId, clickedBtn) {
-        // Ẩn tất cả các màn hình tab
         document.querySelectorAll('.tab-content').forEach(view => view.classList.remove('active'));
-        // Bỏ active của các nút bấm
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-        // Kích hoạt tab và nút được bấm
         document.getElementById(tabId).classList.add('active');
         clickedBtn.classList.add('active');
     }
 
-    // ==========================================
-    // 3. XỬ LÝ CHỨC NĂNG ICD-10
-    // ==========================================
+    // =========================================================================
+    // 2. HÀM LOẠI BỎ DẤU TIẾNG VIỆT ĐỂ SO SÁNH TÌM KIẾM
+    // =========================================================================
+    function removeVietnameseTones(str) {
+        if (!str) return "";
+        str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
+        str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
+        str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i");
+        str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
+        str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u");
+        str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y");
+        str = str.replace(/đ/g,"d");
+        return str.toLowerCase().trim();
+    }
+
+    // =========================================================================
+    // 3. XỬ LÝ CHỨC NĂNG TRA CỨU ICD-10
+    // =========================================================================
     const filterToggleBtn = document.getElementById('filterToggleBtn');
     const filtersWrapper = document.getElementById('filtersWrapper');
     const toggleArrow = document.getElementById('toggleArrow');
@@ -212,18 +411,6 @@
             filterToggleBtn.style.backgroundColor = "#e9ecef";
         }
     });
-
-    function removeVietnameseTones(str) {
-        if (!str) return "";
-        str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
-        str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
-        str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i");
-        str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
-        str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u");
-        str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y");
-        str = str.replace(/đ/g,"d");
-        return str.toLowerCase().trim();
-    }
 
     const searchBox = document.getElementById('searchBox');
     const tableBody = document.getElementById('tableBody');
@@ -281,9 +468,8 @@
         statusMsg.innerText = `Tìm thấy ${data.length} mã phù hợp.`;
 
         if(data.length === 0) {
-            const noResultHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</div>`;
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Không tìm thấy kết quả phù hợp</td></tr>`;
-            cardList.innerHTML = noResultHTML;
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</td></tr>`;
+            cardList.innerHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</div>`;
             return;
         }
 
@@ -325,7 +511,6 @@
             
             if (!badgesHTML) { badgesHTML = `<span class="badge bg-success">Hợp lệ làm bệnh chính</span>`; }
 
-            // Bảng máy tính
             const tr = document.createElement('tr');
             if (isRowDisabled) tr.classList.add("disabled-row");
             tr.innerHTML = `
@@ -339,7 +524,6 @@
             `;
             tableBody.appendChild(tr);
 
-            // Thẻ điện thoại
             const card = document.createElement('div');
             card.classList.add("custom-card");
             if (isRowDisabled) card.classList.add("disabled-card");
@@ -356,143 +540,133 @@
         });
     }
 
-    // ==========================================
-    // 4. XỬ LÝ CHỨC NĂNG TRA CỨU CHỈ ĐỊNH
-    // ==========================================
+    // =========================================================================
+    // 4. XỬ LÝ CHỨC NĂNG TRA CỨU CHỈ ĐỊNH (TÌM KIẾM THÔNG MINH & GIAO DIỆN 3 CỘT)
+    // =========================================================================
     const searchCdBox = document.getElementById('searchCdBox');
     const tableCdBody = document.getElementById('tableCdBody');
     const cardCdList = document.getElementById('cardCdList');
     const statusCdMsg = document.getElementById('statusCdMsg');
 
+    // Bảng từ đồng nghĩa / viết tắt thường dùng
+    const tuDongNghia = {
+        "mri": "cong huong tu",
+        "cong huong": "mri",
+        "ct": "cat lop vi tinh",
+        "clvt": "cat lop vi tinh",
+        "cat lop": "ct",
+        "scanner": "cat lop vi tinh",
+        "xquang": "x quang",
+        "x-quang": "x quang",
+        "xq": "x quang"
+    };
+
+    function chuanHoaTuKhoa(keyword) {
+        let clean = removeVietnameseTones(keyword);
+        for (const [vietTat, dayDu] of Object.entries(tuDongNghia)) {
+            if (clean.includes(vietTat)) {
+                clean += " " + dayDu;
+            }
+        }
+        return clean;
+    }
+
     searchCdBox.addEventListener('input', filterChiDinhData);
 
     function filterChiDinhData() {
-        const keyword = removeVietnameseTones(searchCdBox.value);
+        if (typeof chiDinhData === 'undefined') return;
+
+        const rawInput = searchCdBox.value.trim();
+        if (!rawInput) {
+            renderChiDinhUI(chiDinhData);
+            return;
+        }
+
+        const keywords = removeVietnameseTones(rawInput).split(/\s+/).filter(Boolean);
 
         const filtered = chiDinhData.filter(item => {
-            const listIcdStr = item.dsICD ? item.dsICD.join(" ") : "";
-            const textTarget = removeVietnameseTones(`${item.maDV} ${item.tenDV} ${item.nhom} ${listIcdStr}`);
-            return !keyword || textTarget.includes(keyword);
+            const listIcdStr = item.danhSachICD 
+                ? item.danhSachICD.map(x => `${x.maICD} ${x.tenBenh}`).join(" ") 
+                : "";
+            
+            const rawSource = `${item.maDV} ${item.tenDV} ${item.nhom} ${listIcdStr}`;
+            const sourceText = chuanHoaTuKhoa(rawSource);
+
+            return keywords.every(kw => {
+                const kwNoTone = removeVietnameseTones(kw);
+                const synonym = tuDongNghia[kwNoTone] || "";
+                return sourceText.includes(kwNoTone) || (synonym && sourceText.includes(synonym));
+            });
         });
 
         renderChiDinhUI(filtered);
     }
 
+    // Hiển thị dữ liệu 3 Cột: Kỹ thuật | Mã ICD | Tên bệnh
     function renderChiDinhUI(data) {
         tableCdBody.innerHTML = '';
         cardCdList.innerHTML = '';
-        statusCdMsg.innerText = `Tìm thấy ${data.length} chỉ định dịch vụ phù hợp.`;
+        statusCdMsg.innerText = `Tìm thấy ${data.length} kỹ thuật chỉ định phù hợp.`;
 
         if (data.length === 0) {
-            const noResultHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy dịch vụ phù hợp</div>`;
-            tableCdBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Không tìm thấy dịch vụ phù hợp</td></tr>`;
-            cardCdList.innerHTML = noResultHTML;
+            tableCdBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</td></tr>`;
+            cardCdList.innerHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</div>`;
             return;
         }
 
         data.forEach(item => {
-            const icdBadges = (item.dsICD || []).map(code => `<span class="icd-target-tag">${code}</span>`).join(" ");
+            let icdColumnHTML = "";
+            let nameColumnHTML = "";
 
-            // Render dòng bảng máy tính
+            if (item.danhSachICD && item.danhSachICD.length > 0) {
+                item.danhSachICD.forEach(icd => {
+                    icdColumnHTML += `<div style="margin-bottom: 6px;"><span class="icd-code-badge">${icd.maICD}</span></div>`;
+                    nameColumnHTML += `<div style="margin-bottom: 6px; padding: 2px 0; line-height: 1.4;">${icd.tenBenh}</div>`;
+                });
+            } else {
+                icdColumnHTML = "---";
+                nameColumnHTML = "---";
+            }
+
+            // 1. Dòng bảng 3 cột cho MÁY TÍNH
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong style="color: #28a745;">${item.maDV}</strong></td>
-                <td>
-                    <div><strong>${item.tenDV}</strong></div>
-                    ${item.ghiChu ? `<small style="color: #666;">📝 ${item.ghiChu}</small>` : ''}
-                </td>
-                <td><span class="badge bg-info">${item.nhom}</span></td>
-                <td><div>${icdBadges || '---'}</div></td>
+                <td><strong style="color: #0056b3; font-size: 15px;">${item.tenDV}</strong></td>
+                <td>${icdColumnHTML}</td>
+                <td>${nameColumnHTML}</td>
             `;
             tableCdBody.appendChild(tr);
 
-            // Render thẻ điện thoại
+            // 2. Giao diện dạng Thẻ cho ĐIỆN THOẠI
             const card = document.createElement('div');
             card.classList.add("custom-card", "cd-card");
-            card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-size: 16px; color: #28a745; font-weight: bold;">${item.maDV}</span>
-                    <span class="badge bg-info">${item.nhom}</span>
+            
+            let phoneListHTML = (item.danhSachICD || []).map(icd => `
+                <div class="icd-item-row">
+                    <span class="icd-code-badge">${icd.maICD}</span>
+                    <span>${icd.tenBenh}</span>
                 </div>
-                <div style="font-size: 15px; font-weight: bold; margin-bottom: 6px;">${item.tenDV}</div>
-                ${item.ghiChu ? `<div style="font-size: 13px; color: #555; margin-bottom: 6px;">📝 ${item.ghiChu}</div>` : ''}
-                <div style="margin-top: 6px;">
-                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">Mã ICD phù hợp gợi ý:</div>
-                    ${icdBadges}
+            `).join("");
+
+            card.innerHTML = `
+                <div style="font-size: 16px; font-weight: bold; color: #28a745; margin-bottom: 8px;">
+                    ${item.tenDV}
+                </div>
+                <div style="background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px; border-radius: 6px;">
+                    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">MÃ ICD & TÊN BỆNH PHÙ HỢP:</div>
+                    ${phoneListHTML}
                 </div>
             `;
             cardCdList.appendChild(card);
         });
     }
 
-    // Tự động tải dữ liệu khi trang khởi động
+    // =========================================================================
+    // 5. TỰ ĐỘNG KHỞI CHẠY TẢI DỮ LIỆU KHI MỞ TRANG WEB
+    // =========================================================================
     window.onload = () => {
-        filterData();
-// =========================================================================
-// HÀM TÌM KIẾM CHỈ ĐỊNH NÂNG CAO (HỖ TRỢ TỪ VIẾT TẮT / ĐỒNG NGHĨA)
-// =========================================================================
-
-// 1. Bảng từ đồng nghĩa / viết tắt thường dùng trong chẩn đoán hình ảnh
-const tuDongNghia = {
-    "mri": "cong huong tu",
-    "cong huong": "mri",
-    "ct": "cat lop vi tinh",
-    "clvt": "cat lop vi tinh",
-    "cat lop": "ct",
-    "scanner": "cat lop vi tinh",
-    "xquang": "x quang",
-    "x-quang": "x quang",
-    "xq": "x quang"
-};
-
-// 2. Hàm chuẩn hóa và mở rộng từ khóa tìm kiếm
-function chuanHoaTuKhoa(keyword) {
-    let clean = removeVietnameseTones(keyword);
-    
-    // Tự động bổ sung cụm từ đồng nghĩa tương ứng vào chuỗi tìm kiếm
-    for (const [vietTat, dayDu] of Object.entries(tuDongNghia)) {
-        if (clean.includes(vietTat)) {
-            clean += " " + dayDu;
-        }
-    }
-    return clean;
-}
-
-// 3. Hàm lọc dữ liệu Chỉ định
-function filterChiDinhData() {
-    if (typeof chiDinhData === 'undefined') return;
-
-    const rawInput = searchCdBox.value.trim();
-    if (!rawInput) {
-        // Nếu ô tìm kiếm trống, hiển thị toàn bộ danh mục
-        renderChiDinhUI(chiDinhData);
-        return;
-    }
-
-    // Tách các từ người dùng gõ thành từng mẩu từ khóa nhỏ (tokens)
-    const keywords = removeVietnameseTones(rawInput).split(/\s+/).filter(Boolean);
-
-    const filtered = chiDinhData.filter(item => {
-        // Gom toàn bộ thông tin của 1 kỹ thuật thành một đoạn văn bản tổng hợp
-        const listIcdStr = item.danhSachICD 
-            ? item.danhSachICD.map(x => `${x.maICD} ${x.tenBenh}`).join(" ") 
-            : "";
-        
-        // Chuỗi dữ liệu nguồn (được chuẩn hóa bỏ dấu tiếng Việt và mở rộng từ đồng nghĩa)
-        const rawSource = `${item.maDV} ${item.tenDV} ${item.nhom} ${listIcdStr}`;
-        const sourceText = chuanHoaTuKhoa(rawSource);
-
-        // Kiểm tra: Mỗi từ khóa người dùng gõ vào đều phải xuất hiện trong dữ liệu
-        return keywords.every(kw => {
-            const kwNoTone = removeVietnameseTones(kw);
-            // Tìm chính xác từ gõ HOẶC từ đồng nghĩa của nó
-            const synonym = tuDongNghia[kwNoTone] || "";
-            return sourceText.includes(kwNoTone) || (synonym && sourceText.includes(synonym));
-        });
-    });
-
-    renderChiDinhUI(filtered);
-}
+        filterData();        // Khởi động bảng ICD-10
+        filterChiDinhData(); // Khởi động bảng Chỉ định
     };
 </script>
 </body>
