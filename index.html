@@ -179,37 +179,9 @@
 
 <!-- Nạp file dữ liệu ICD-10 của bạn -->
 <script src="icd10.js"></script>
-
+<script src="chidinh.js"></script>
 <script>
-    // ==========================================
-    // 1. DỮ LIỆU MẪU CHỈ ĐỊNH (Thay thế hoặc tách file sau này)
-    // ==========================================
-    // Bạn có thể đưa biến này sang 1 file riêng như 'chidinh.js' tương tự 'icd10.js'
-    const chiDinhData = [
-        {
-            maDV: "XN001",
-            tenDV: "Tổng phân tích tế bào máu ngoại vi bằng máy đếm laser",
-            nhom: "Huyết học",
-            dsICD: ["D64", "D50", "A00", "A01", "B50"],
-            ghiChu: "Chỉ định khi nghi ngờ thiếu máu hoặc nhiễm trùng"
-        },
-        {
-            maDV: "CĐHA002",
-            tenDV: "Chụp X-quang ngực thẳng tiêu chuẩn",
-            nhom: "Chẩn đoán hình ảnh",
-            dsICD: ["J18", "J20", "A15", "J45"],
-            ghiChu: "Kiểm tra tổn thương nhu mô phổi"
-        },
-        {
-            maDV: "TDCN003",
-            tenDV: "Điện tâm đồ vi tính (ECG 12 chuyển đạo)",
-            nhom: "Thăm dò chức năng",
-            dsICD: ["I10", "I20", "I25", "R07"],
-            ghiChu: "Đau thắt ngực, tăng huyết áp"
-        }
-    ];
 
-    // ==========================================
     // 2. CHUYỂN ĐỔI TAB (TABS LOGIC)
     // ==========================================
     function switchTab(tabId, clickedBtn) {
@@ -456,7 +428,71 @@
     // Tự động tải dữ liệu khi trang khởi động
     window.onload = () => {
         filterData();
-        filterChiDinhData();
+// =========================================================================
+// HÀM TÌM KIẾM CHỈ ĐỊNH NÂNG CAO (HỖ TRỢ TỪ VIẾT TẮT / ĐỒNG NGHĨA)
+// =========================================================================
+
+// 1. Bảng từ đồng nghĩa / viết tắt thường dùng trong chẩn đoán hình ảnh
+const tuDongNghia = {
+    "mri": "cong huong tu",
+    "cong huong": "mri",
+    "ct": "cat lop vi tinh",
+    "clvt": "cat lop vi tinh",
+    "cat lop": "ct",
+    "scanner": "cat lop vi tinh",
+    "xquang": "x quang",
+    "x-quang": "x quang",
+    "xq": "x quang"
+};
+
+// 2. Hàm chuẩn hóa và mở rộng từ khóa tìm kiếm
+function chuanHoaTuKhoa(keyword) {
+    let clean = removeVietnameseTones(keyword);
+    
+    // Tự động bổ sung cụm từ đồng nghĩa tương ứng vào chuỗi tìm kiếm
+    for (const [vietTat, dayDu] of Object.entries(tuDongNghia)) {
+        if (clean.includes(vietTat)) {
+            clean += " " + dayDu;
+        }
+    }
+    return clean;
+}
+
+// 3. Hàm lọc dữ liệu Chỉ định
+function filterChiDinhData() {
+    if (typeof chiDinhData === 'undefined') return;
+
+    const rawInput = searchCdBox.value.trim();
+    if (!rawInput) {
+        // Nếu ô tìm kiếm trống, hiển thị toàn bộ danh mục
+        renderChiDinhUI(chiDinhData);
+        return;
+    }
+
+    // Tách các từ người dùng gõ thành từng mẩu từ khóa nhỏ (tokens)
+    const keywords = removeVietnameseTones(rawInput).split(/\s+/).filter(Boolean);
+
+    const filtered = chiDinhData.filter(item => {
+        // Gom toàn bộ thông tin của 1 kỹ thuật thành một đoạn văn bản tổng hợp
+        const listIcdStr = item.danhSachICD 
+            ? item.danhSachICD.map(x => `${x.maICD} ${x.tenBenh}`).join(" ") 
+            : "";
+        
+        // Chuỗi dữ liệu nguồn (được chuẩn hóa bỏ dấu tiếng Việt và mở rộng từ đồng nghĩa)
+        const rawSource = `${item.maDV} ${item.tenDV} ${item.nhom} ${listIcdStr}`;
+        const sourceText = chuanHoaTuKhoa(rawSource);
+
+        // Kiểm tra: Mỗi từ khóa người dùng gõ vào đều phải xuất hiện trong dữ liệu
+        return keywords.every(kw => {
+            const kwNoTone = removeVietnameseTones(kw);
+            // Tìm chính xác từ gõ HOẶC từ đồng nghĩa của nó
+            const synonym = tuDongNghia[kwNoTone] || "";
+            return sourceText.includes(kwNoTone) || (synonym && sourceText.includes(synonym));
+        });
+    });
+
+    renderChiDinhUI(filtered);
+}
     };
 </script>
 </body>
