@@ -28,7 +28,24 @@
             margin-top: 5px; 
             margin-bottom: 15px; 
         }
-
+        /* Định dạng từng hàng bệnh và mã ICD thẳng hàng, có kẻ phân cách */
+        .item-row-cell {
+            padding: 8px 4px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            min-height: 28px;
+            box-sizing: border-box;
+        }
+        /* Hàng cuối cùng không cần kẻ viền dưới */
+        .item-row-cell:last-child {
+            border-bottom: none;
+        }
+        /* Xóa padding mặc định của 2 cột chứa danh sách con để đường kẻ tràn sát mép ô */
+        td.cell-list-container {
+            padding: 0 8px !important;
+            vertical-align: top;
+        }
         /* =========================================================================
            2. THANH ĐIỀU HƯỚNG TAB
            ========================================================================= */
@@ -349,9 +366,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th class="cd-header" style="width: 35%;">Tên Kỹ thuật</th>
-                        <th class="cd-header" style="width: 15%;">ICD Phù hợp</th>
-                        <th class="cd-header" style="width: 50%;">Tên bệnh</th>
+                        <th class="cd-header" style="width: 20%;">Tên Kỹ thuật</th>
+                        <th class="cd-header" style="width: 10%;">ICD Phù hợp</th>
+                        <th class="cd-header" style="width: 70%;">Tên bệnh</th>
                     </tr>
                 </thead>
                 <tbody id="tableCdBody"></tbody>
@@ -603,54 +620,66 @@
     }
 
     // Hiển thị dữ liệu 3 Cột: Kỹ thuật | Mã ICD | Tên bệnh
+   // =========================================================================
+    // HÀM HIỂN THỊ GIAO DIỆN CHỈ ĐỊNH (KẺ HÀNG TỪNG CẶP MÃ VÀ TÊN BỆNH)
+    // =========================================================================
     function renderChiDinhUI(data) {
-        // 1. Xóa sạch dữ liệu cũ trước khi vẽ danh sách mới
         tableCdBody.innerHTML = '';
         cardCdList.innerHTML = '';
         statusCdMsg.innerText = `Tìm thấy ${data.length} kỹ thuật chỉ định phù hợp.`;
 
-        // 2. Xử lý trường hợp không tìm thấy từ khóa
+        // Xử lý khi không tìm thấy kết quả
         if (data.length === 0) {
             tableCdBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</td></tr>`;
             cardCdList.innerHTML = `<div style="text-align:center; padding: 20px; color: #999;">Không tìm thấy kết quả phù hợp</div>`;
             return;
         }
 
-        // 3. Duyệt qua từng kỹ thuật và vẽ dữ liệu thành 3 cột
         data.forEach(item => {
-            let icdBadgesHTML = "";
-            let benhKemIcdHTML = "";
+            let icdColumnHTML = "";
+            let nameColumnHTML = "";
 
             if (item.danhSachICD && item.danhSachICD.length > 0) {
                 item.danhSachICD.forEach(icd => {
-                    // Cột 2: Chỉ hiển thị nhãn Mã ICD màu xanh
-                    icdBadgesHTML += `<div style="margin-bottom: 6px;"><span class="icd-code-badge">${icd.maICD}</span></div>`;
+                    // Cột 2: Mã ICD bọc trong hàng có kẻ viền
+                    icdColumnHTML += `
+                        <div class="item-row-cell">
+                            <span class="icd-code-badge">${icd.maICD}</span>
+                        </div>
+                    `;
                     
-                    // Cột 3: Tên bệnh kèm theo mã ICD phía sau trong ngoặc
-                    benhKemIcdHTML += `<div style="margin-bottom: 6px; padding: 2px 0; line-height: 1.4;">${icd.tenBenh} <strong>(${icd.maICD})</strong></div>`;
+                    // Cột 3: Tên bệnh kèm mã ICD bọc trong hàng có kẻ viền tương ứng
+                    benhKemIcdHTML = `
+                        <div class="item-row-cell">
+                            <span>${icd.tenBenh}</span>&nbsp;<strong style="color: #0056b3;">(${icd.maICD})</strong>
+                        </div>
+                    `;
+                    nameColumnHTML += benhKemIcdHTML;
                 });
             } else {
-                icdBadgesHTML = "---";
-                benhKemIcdHTML = "---";
+                icdColumnHTML = `<div class="item-row-cell">---</div>`;
+                nameColumnHTML = `<div class="item-row-cell">---</div>`;
             }
 
-            // Giao diện Bảng dành cho MÁY TÍNH (Đúng 3 thẻ <td>)
+            // 1. Dòng bảng dành cho MÁY TÍNH
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong style="color: #0056b3; font-size: 15px;">${item.tenDV}</strong></td>
-                <td>${icdBadgesHTML}</td>
-                <td>${benhKemIcdHTML}</td>
+                <td style="padding: 12px; vertical-align: top;">
+                    <strong style="color: #0056b3; font-size: 15px;">${item.tenDV}</strong>
+                </td>
+                <td class="cell-list-container">${icdColumnHTML}</td>
+                <td class="cell-list-container">${nameColumnHTML}</td>
             `;
             tableCdBody.appendChild(tr);
 
-            // Giao diện Thẻ dành cho ĐIỆN THOẠI
+            // 2. Thẻ dành cho ĐIỆN THOẠI (được kẻ từng dòng kèm viền đứt đoạn)
             const card = document.createElement('div');
             card.classList.add("custom-card", "cd-card");
             
             let mobileListHTML = (item.danhSachICD || []).map(icd => `
-                <div class="icd-item-row">
-                    <span class="icd-code-badge">${icd.maICD}</span>
-                    <span>${icd.tenBenh}</span>
+                <div class="icd-item-row" style="display: flex; align-items: flex-start; gap: 8px; padding: 6px 0;">
+                    <span class="icd-code-badge" style="flex-shrink: 0;">${icd.maICD}</span>
+                    <span style="line-height: 1.4;">${icd.tenBenh}</span>
                 </div>
             `).join("");
 
@@ -658,8 +687,10 @@
                 <div style="font-size: 16px; font-weight: bold; color: #28a745; margin-bottom: 8px;">
                     ${item.tenDV}
                 </div>
-                <div style="background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px; border-radius: 6px;">
-                    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px;">ICD VÀ TÊN BỆNH PHÙ HỢP:</div>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 6px;">
+                    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 6px; border-bottom: 1px solid #ced4da; padding-bottom: 4px;">
+                        DANH MỤC BỆNH & MÃ ICD PHÙ HỢP:
+                    </div>
                     ${mobileListHTML}
                 </div>
             `;
